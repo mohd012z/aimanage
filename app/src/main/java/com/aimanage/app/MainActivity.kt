@@ -31,7 +31,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -135,7 +135,25 @@ private fun AimanageUI() {
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
-  if(section == "Battery") Text("Charge: ${pct?.let { "$it%" } ?: "Unavailable"}")
+  if(section == "Battery" || section == "Battery Care" || section == "Standby Intelligence") {
+   val context = LocalContext.current
+   val b = remember { DeviceReadings.battery(context) }
+   Text("Charge: ${b.percent?.let { "$it%" } ?: "Unavailable"}")
+   Text("Charging: ${if(b.charging) "Yes" else "No"}")
+   Text("Battery temperature: ${b.temperatureC?.let { "$it °C" } ?: "Unavailable"}")
+   Text("Voltage: ${b.voltageMv?.let { "$it mV" } ?: "Unavailable"}")
+   Text("Current: ${b.currentMa?.let { "$it mA" } ?: "Unavailable"}")
+   Text("Charge counter: ${b.chargeCounterMah?.let { "$it mAh" } ?: "Unavailable"}")
+   Text("Battery health code: ${b.healthCode ?: "Unavailable"} (system status, not capacity estimate)")
+   Text("Charging limits cannot be controlled by ordinary Android apps.",color=Muted)
+   Text("Standby drain history and charging alerts: planned.",color=Muted)
+  }
+  if(section == "Display & Refresh Rate") {
+   val context = LocalContext.current
+   Text("Current display rate: ${DeviceReadings.refreshRate(context)?.let { "$it Hz" } ?: "Unavailable"}")
+   Text("Supported modes: ${DeviceReadings.supportedRates(context).joinToString { "$it Hz" }}")
+   Text("Refresh-rate changes are controlled by Android / HyperOS.",color=Muted)
+  }
   if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal")
   if(section == "Device Information") { Text("Model: ${Build.MANUFACTURER} ${Build.MODEL}"); Text("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})") }
   Action("Open Android app settings") { open(Settings.ACTION_APPLICATION_SETTINGS) }
