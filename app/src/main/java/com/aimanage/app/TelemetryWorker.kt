@@ -16,6 +16,7 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
   return try {
    val sample=DeviceLearningEngine.capture(applicationContext)
    DeviceLearningEngine.record(applicationContext,sample)
+   DeviceAlertEngine.check(applicationContext,sample)
    Result.success()
   } catch (_:Exception) { Result.retry() }
  }
