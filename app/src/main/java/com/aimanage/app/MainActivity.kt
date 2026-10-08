@@ -237,6 +237,22 @@ private fun AimanageUI() {
    }
   }
   if(section == "AI Learning") {
+   val alertContext = LocalContext.current
+   var healthAlerts by remember { mutableStateOf(DeviceAlertEngine.enabled(alertContext)) }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Device health alerts",modifier=Modifier.weight(1f))
+    Switch(checked=healthAlerts,onCheckedChange={requested ->
+     if(requested && android.os.Build.VERSION.SDK_INT >= 33 &&
+       alertContext.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+      (alertContext as? Activity)?.requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),9001)
+     } else {
+      DeviceAlertEngine.setEnabled(alertContext,requested)
+      healthAlerts=requested
+     }
+    })
+   }
+   Text("Alerts require notification permission and periodic sampling to be enabled. Android may delay checks.",color=Muted)
+
    val appContext = LocalContext.current
    var sampling by remember { mutableStateOf(TelemetryScheduler.enabled(appContext)) }
    Row(verticalAlignment=Alignment.CenterVertically) {
