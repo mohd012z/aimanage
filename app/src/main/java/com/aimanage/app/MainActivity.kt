@@ -31,7 +31,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -147,6 +147,18 @@ private fun AimanageUI() {
    Text("Battery health code: ${b.healthCode ?: "Unavailable"} (system status, not capacity estimate)")
    Text("Charging limits cannot be controlled by ordinary Android apps.",color=Muted)
    Text("Standby drain history and charging alerts: planned.",color=Muted)
+  }
+  if(section == "Charging Intelligence" || section == "Brightness & Power" || section == "AI Assistant") {
+   val context = LocalContext.current
+   val d = remember { ChargingDiagnostics.assess(context) }
+   Text("Battery-side charging power: ${d.batteryPowerW?.let { "%.1f W".format(it) } ?: "Unavailable"}")
+   Text("Brightness setting: ${d.brightnessPercent?.let { "$it%" } ?: "Unavailable"}")
+   Text("Adaptive brightness: ${d.adaptiveBrightness?.toString() ?: "Unavailable"}")
+   Text("Power saver: ${if(d.powerSaveEnabled) "On" else "Off"}")
+   d.observations.forEach { Text("• $it", color=Muted) }
+   Action("Open display settings") { open(Settings.ACTION_DISPLAY_SETTINGS) }
+   Action("Open battery saver") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+   Text("Charging alerts and interactive AI chat are planned; this screen currently provides rule-based observations.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
