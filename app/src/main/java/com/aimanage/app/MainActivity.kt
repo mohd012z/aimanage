@@ -31,7 +31,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -159,6 +159,19 @@ private fun AimanageUI() {
    Action("Open display settings") { open(Settings.ACTION_DISPLAY_SETTINGS) }
    Action("Open battery saver") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
    Text("Charging alerts and interactive AI chat are planned; this screen currently provides rule-based observations.",color=Muted)
+  }
+  if(section == "Security Intelligence" || section == "Web Scam Check" || section == "Telegram Safety" || section == "Caller Intelligence" || section == "Voice Caller" || section == "Notification Center") {
+   var query by remember { mutableStateOf("") }
+   var result by remember { mutableStateOf<SecurityFinding?>(null) }
+   Text("Offline security check: enter a website URL or an international phone number.", color=Muted)
+   OutlinedTextField(value=query,onValueChange={query=it},label={Text("URL or +country-code number")},modifier=Modifier.fillMaxWidth(),singleLine=true)
+   Action("Analyze input") { result = if(query.trim().startsWith("+")) SecurityAnalyzer.explainPhone(query) else SecurityAnalyzer.checkUrl(query) }
+   result?.let { finding ->
+    Text("Assessment: ${finding.level}",fontWeight=FontWeight.Bold)
+    Text(finding.summary)
+    finding.evidence.forEach { Text("• $it",color=Muted) }
+   }
+   Text("Telegram account checks, live caller detection, notification reading, and automatic speech announcements are not yet active.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
