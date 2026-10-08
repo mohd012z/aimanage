@@ -16,12 +16,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - name: Verify runner Android SDK
+        run: test -d "$ANDROID_HOME/platforms/android-35" && test -d "$ANDROID_HOME/build-tools"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
       - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleDebug 2>&1 | tee build.log
+        shell: bash
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-log
+          path: build.log
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: success()
         with:
