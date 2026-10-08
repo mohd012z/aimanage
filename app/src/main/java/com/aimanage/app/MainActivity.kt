@@ -237,6 +237,17 @@ private fun AimanageUI() {
    }
   }
   if(section == "AI Learning") {
+   val appContext = LocalContext.current
+   var sampling by remember { mutableStateOf(TelemetryScheduler.enabled(appContext)) }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Automatic local sampling",modifier=Modifier.weight(1f))
+    Switch(checked=sampling,onCheckedChange={
+     sampling=it
+     TelemetryScheduler.setEnabled(appContext,it)
+    })
+   }
+   Text("Best-effort sampling approximately every 30 minutes. Android may delay background work.",color=Muted)
+
    val context = LocalContext.current
    var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
    Text("Local learning samples: ${samples.size}")
