@@ -60,7 +60,7 @@ object DeviceLearningEngine {
    insights += DeviceInsight("WARNING","Android reports thermal pressure",
     "System thermal status: ${last.thermalStatus}.","Allow Android thermal safeguards to operate.")
   val recent=samples.takeLast(24).filter { !it.charging && it.batteryPercent != null }
-  if(recent.size>=2) {
+  if(recent.size>=2 && recent.zipWithNext().all { (a,b) -> b.timestamp > a.timestamp && b.batteryPercent!! <= a.batteryPercent!! }) {
    val first=recent.first(); val end=recent.last()
    val elapsed=(end.timestamp-first.timestamp)/3600000.0
    if(elapsed>=1 && end.batteryPercent!! <= first.batteryPercent!!) {
