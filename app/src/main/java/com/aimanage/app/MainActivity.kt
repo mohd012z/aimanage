@@ -160,7 +160,7 @@ private fun AimanageUI() {
    Action("Open battery saver") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
    Text("Charging alerts and interactive AI chat are planned; this screen currently provides rule-based observations.",color=Muted)
   }
-  if(section == "Security Intelligence" || section == "Web Scam Check" || section == "Telegram Safety" || section == "Caller Intelligence" || section == "Voice Caller" || section == "Notification Center") {
+  if(section == "Security Intelligence" || section == "Web Scam Check" || section == "Telegram Safety" || section == "Caller Intelligence" || section == "Voice Caller"  ) {
    var query by remember { mutableStateOf("") }
    var result by remember { mutableStateOf<SecurityFinding?>(null) }
    Text("Offline security check: enter a website URL or an international phone number.", color=Muted)
@@ -173,7 +173,7 @@ private fun AimanageUI() {
    }
    Text("Telegram account checks, live caller detection, notification reading, and automatic speech announcements are not yet active.",color=Muted)
   }
-  if(section == "Automation Control" || section == "Notification Center" || section == "CPU & App Activity") {
+  if(section == "Automation Control" || section == "Notification Center") {
    val context = LocalContext.current
    val prefs = remember { context.getSharedPreferences("aimanage_rules",android.content.Context.MODE_PRIVATE) }
    var enabled by remember { mutableStateOf(prefs.getBoolean("automation_enabled",false)) }
@@ -203,6 +203,19 @@ private fun AimanageUI() {
    }
    Text("Protected call/system notifications and ongoing foreground-service notifications are not auto-dismissed.",color=Muted)
    Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
+  }
+  if(section == "CPU & App Activity" || section == "Standby Intelligence") {
+   val context = LocalContext.current
+   var report by remember { mutableStateOf(ActivityMonitor.report(context)) }
+   Text("Thermal pressure: ${report.thermalStatus}")
+   Text("Battery Saver: ${if(report.powerSaver) "Enabled" else "Disabled"}")
+   Text("Usage access: ${if(report.usageAccessGranted) "Granted" else "Required"}")
+   if(!report.usageAccessGranted) Action("Grant usage access") { open(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+   Action("Refresh app activity") { report=ActivityMonitor.report(context) }
+   report.recentApps.forEach { app ->
+    Text("${app.packageName} — ${app.foregroundMinutes} min foreground",color=Muted,style=MaterialTheme.typography.bodySmall)
+   }
+   report.notes.forEach { Text("• $it",color=Muted,style=MaterialTheme.typography.bodySmall) }
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
