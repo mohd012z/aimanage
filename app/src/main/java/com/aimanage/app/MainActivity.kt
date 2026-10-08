@@ -217,6 +217,25 @@ private fun AimanageUI() {
    }
    report.notes.forEach { Text("• $it",color=Muted,style=MaterialTheme.typography.bodySmall) }
   }
+  if(section == "AI Assistant") {
+   val context = LocalContext.current
+   var question by remember { mutableStateOf("") }
+   var reply by remember { mutableStateOf<AssistantReply?>(null) }
+   Text("Offline device assistant — evidence-based answers and permission-aware actions.",color=Muted)
+   OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask AImanage")},modifier=Modifier.fillMaxWidth(),minLines=2)
+   Action("Ask assistant") { reply=DeviceAssistant.reply(context,question) }
+   reply?.let { answer ->
+    Text(answer.message)
+    answer.settingsAction?.let { action -> Action("Open Android settings") { open(action) } }
+    answer.proposedRule?.let { enabled ->
+     Action(if(enabled) "Confirm enable automation" else "Confirm disable automation") {
+      DeviceAssistant.setNotificationAutomation(context,enabled)
+      reply=AssistantReply("Notification automation ${if(enabled) "enabled" else "disabled"}. Android Notification Access must still be granted.")
+     }
+     Action("Cancel proposed change") { reply=null }
+    }
+   }
+  }
   if(section == "AI Learning") {
    val context = LocalContext.current
    var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
