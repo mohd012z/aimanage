@@ -17,9 +17,17 @@ object DeviceLearningEngine {
  private const val MAX_SAMPLES = 168
  fun capture(context: Context): DeviceLearningSample {
   val battery = DeviceReadings.battery(context)
-  val activity = ActivityMonitor.report(context)
+  val power = context.getSystemService(android.os.PowerManager::class.java)
   return DeviceLearningSample(System.currentTimeMillis(),battery.percent,battery.temperatureC,
-   battery.charging,activity.thermalStatus,activity.powerSaver)
+   battery.charging,when(power.currentThermalStatus) {
+    android.os.PowerManager.THERMAL_STATUS_SEVERE -> "Severe"
+    android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "Critical"
+    android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "Emergency"
+    android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "Shutdown"
+    android.os.PowerManager.THERMAL_STATUS_MODERATE -> "Moderate"
+    android.os.PowerManager.THERMAL_STATUS_LIGHT -> "Light"
+    else -> "Normal"
+   },power.isPowerSaveMode)
  }
  fun record(context: Context, sample: DeviceLearningSample): Int {
   val prefs=context.getSharedPreferences("device_learning",Context.MODE_PRIVATE)
