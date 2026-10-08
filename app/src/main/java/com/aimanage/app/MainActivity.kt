@@ -31,7 +31,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -172,6 +172,37 @@ private fun AimanageUI() {
     finding.evidence.forEach { Text("• $it",color=Muted) }
    }
    Text("Telegram account checks, live caller detection, notification reading, and automatic speech announcements are not yet active.",color=Muted)
+  }
+  if(section == "Automation Control" || section == "Notification Center" || section == "CPU & App Activity") {
+   val context = LocalContext.current
+   val prefs = remember { context.getSharedPreferences("aimanage_rules",android.content.Context.MODE_PRIVATE) }
+   var enabled by remember { mutableStateOf(prefs.getBoolean("automation_enabled",false)) }
+   var packageInput by remember { mutableStateOf("") }
+   var packages by remember { mutableStateOf(prefs.getStringSet("dismiss_packages",emptySet())?.toSet() ?: emptySet()) }
+   Text("Notification automation is opt-in and only applies to explicitly selected apps.",color=Muted)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Enable notification rules",modifier=Modifier.weight(1f))
+    Switch(checked=enabled,onCheckedChange={enabled=it;prefs.edit().putBoolean("automation_enabled",it).apply()})
+   }
+   Action("Grant notification access") { open(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+   Action("Grant usage access") { open(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+   OutlinedTextField(value=packageInput,onValueChange={packageInput=it},label={Text("Exact app package name")},modifier=Modifier.fillMaxWidth())
+   Action("Add app to auto-dismiss list") {
+    val p=packageInput.trim()
+    if(p.matches(Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+"))) {
+     packages=packages+p
+     prefs.edit().putStringSet("dismiss_packages",packages).apply()
+     packageInput=""
+    }
+   }
+   packages.sorted().forEach { p ->
+    Row(verticalAlignment=Alignment.CenterVertically) {
+     Text(p,modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
+     TextButton(onClick={packages=packages-p;prefs.edit().putStringSet("dismiss_packages",packages).apply()}) { Text("Remove") }
+    }
+   }
+   Text("Protected call/system notifications and ongoing foreground-service notifications are not auto-dismissed.",color=Muted)
+   Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
