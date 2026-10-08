@@ -31,7 +31,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -216,6 +216,25 @@ private fun AimanageUI() {
     Text("${app.packageName} — ${app.foregroundMinutes} min foreground",color=Muted,style=MaterialTheme.typography.bodySmall)
    }
    report.notes.forEach { Text("• $it",color=Muted,style=MaterialTheme.typography.bodySmall) }
+  }
+  if(section == "AI Learning") {
+   val context = LocalContext.current
+   var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
+   Text("Local learning samples: ${samples.size}")
+   Action("Capture device snapshot") {
+    DeviceLearningEngine.record(context,DeviceLearningEngine.capture(context))
+    samples=DeviceLearningEngine.load(context)
+   }
+   DeviceLearningEngine.analyze(samples).forEach { insight ->
+    Text("${insight.severity}: ${insight.title}",fontWeight=FontWeight.Bold)
+    Text(insight.evidence,color=Muted)
+    Text(insight.suggestion,color=Muted)
+   }
+   Action("Delete local learning history") {
+    DeviceLearningEngine.clear(context)
+    samples=emptyList()
+   }
+   Text("Learning is rule-based and on-device. Automatic background sampling and model training are not enabled.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
