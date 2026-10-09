@@ -19,12 +19,12 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
    val sample=DeviceLearningEngine.capture(applicationContext)
    DeviceLearningEngine.record(applicationContext,sample)
    DeviceAlertEngine.check(applicationContext,sample)
-   prefs.edit().putLong("telemetry_last_success",System.currentTimeMillis()).remove("telemetry_last_error").apply()
+   prefs.edit().putLong("telemetry_last_success",System.currentTimeMillis()).remove("telemetry_last_error").remove("telemetry_last_error_at").apply()
    Result.success()
   } catch (cancelled:CancellationException) {
    throw cancelled
   } catch (error:Exception) {
-   prefs.edit().putString("telemetry_last_error",when(error) {
+   prefs.edit().putLong("telemetry_last_error_at",System.currentTimeMillis()).putString("telemetry_last_error",when(error) {
     is SecurityException -> "Permission denied"
     is java.io.IOException -> "Device I/O unavailable"
     is IllegalStateException -> "Device state unavailable"
@@ -50,7 +50,7 @@ object TelemetryScheduler {
    manager.enqueueUniquePeriodicWork(NAME,ExistingPeriodicWorkPolicy.KEEP,request)
   } else {
    manager.cancelUniqueWork(NAME)
-   context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).edit().remove("telemetry_last_error").apply()
+   context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).edit().remove("telemetry_last_error").remove("telemetry_last_error_at").apply()
   }
  }
  /** A delayed sample is not necessarily a failure: Doze and OEM policies defer work. */
@@ -64,6 +64,7 @@ object TelemetryScheduler {
  }
  fun lastSuccess(context:Context):Long=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_last_success",0L)
  fun lastError(context:Context):String?=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getString("telemetry_last_error",null)
+ fun lastErrorAt(context:Context):Long=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_last_error_at",0L)
  fun enabled(context:Context)=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
   .getBoolean("telemetry_enabled",false)
 }
