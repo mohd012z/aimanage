@@ -134,7 +134,7 @@ private fun AimanageUI() {
   "Thermal","CPU & Thermal" -> "Read-only thermal status. No CPU governor or cooling hardware control."
   "Battery" -> "Battery charge reading and Android battery settings."
   "Network","Network & Speed" -> "Network monitoring and per-app rate limits are future work."
-  "Protect","Ad Blocker","Firewall","VPN" -> "Not active. DNS blocking, firewall and remote VPN require a separately implemented VpnService and explicit user consent."
+  "Protect","Ad Blocker","Firewall","VPN" -> "No in-app VPN or firewall is active. Private DNS can be set by you in Android Settings; AImanage cannot change it silently."
   "Permissions" -> "Only request permissions when a working feature needs them."
   else -> "System information and Android settings."
  }
@@ -235,6 +235,11 @@ private fun AimanageUI() {
    Text("Offline device assistant — evidence-based answers and permission-aware actions.",color=Muted)
    OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask AImanage")},modifier=Modifier.fillMaxWidth(),minLines=2)
    Action("Ask assistant") { reply=DeviceAssistant.reply(context,question) }
+   Text("Quick questions",color=Muted,style=MaterialTheme.typography.labelMedium)
+   val quickQuestions=listOf("Save battery without slowing apps","Which apps should I close?","Private DNS block ads","Cooling and thermal","VPN","Network speed","Notification management")
+   quickQuestions.forEach { prompt ->
+    TextButton(onClick={ question=prompt; reply=DeviceAssistant.reply(context,prompt) }) { Text(prompt) }
+   }
    reply?.let { answer ->
     Text(answer.message)
     answer.settingsAction?.let { action -> Action("Open Android settings") { open(action) } }
@@ -332,6 +337,11 @@ private fun AimanageUI() {
    Text("Current display rate: ${DeviceReadings.refreshRate(context)?.let { "$it Hz" } ?: "Unavailable"}")
    Text("Supported modes: ${DeviceReadings.supportedRates(context).joinToString { "$it Hz" }}")
    Text("Refresh-rate changes are controlled by Android / HyperOS.",color=Muted)
+  }
+  if(section == "Ad Blocker" || section == "VPN" || section == "Network & Speed" || section == "Network") {
+   Text("Private DNS is configured in Android Settings. DNS filters may block some ads but cannot block all app/video advertisements.",color=Muted)
+   Action("Open network / Private DNS settings") { open(Settings.ACTION_WIRELESS_SETTINGS) }
+   Action("Open VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
   }
   if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal")
   if(section == "Device Information") { Text("Model: ${Build.MANUFACTURER} ${Build.MODEL}"); Text("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})") }
