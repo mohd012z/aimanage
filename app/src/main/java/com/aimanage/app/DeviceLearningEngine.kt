@@ -69,14 +69,20 @@ object DeviceLearningEngine {
     "System thermal status: ${last.thermalStatus}.","Allow Android thermal safeguards to operate.")
   // Analyze only the latest uninterrupted discharge session. Filtering out charging
   // samples could otherwise connect unrelated periods and report a misleading rate.
-  val recent=samples.takeLast(24).takeLastWhile { !it.charging && it.batteryPercent != null }
-  val continuous=recent.size>=2 && recent.zipWithNext().all { (a,b) ->
-   b.timestamp > a.timestamp &&
-    b.timestamp-a.timestamp <= 3L*60L*60L*1000L &&
-    b.batteryPercent!! <= a.batteryPercent!!
+  val eligible=samples.takeLast(24).takeLastWhile { !it.charging && it.batteryPercent != null }
+  // A gap or rising battery percentage ends a discharge segment. Keep only
+  // the most recent continuous segment rather than rejecting its valid tail.
+  val latest=mutableListOf<DeviceLearningSample>()
+  for (sample in eligible.asReversed()) {
+   val newer=latest.lastOrNull()
+   if(newer != null && (newer.timestamp <= sample.timestamp ||
+      newer.timestamp-sample.timestamp > 3L*60L*60L*1000L ||
+      newer.batteryPercent!! > sample.batteryPercent!!)) break
+   latest.add(sample)
   }
-  if(continuous) {
-   val first=recent.first(); val end=recent.last()
+  latest.reverse()
+  if(latest.size>=2) {
+   val first=latest.first(); val end=latest.last()
    val elapsed=(end.timestamp-first.timestamp)/3600000.0
    if(elapsed>=1 && end.batteryPercent!! <= first.batteryPercent!!) {
     val rate=(first.batteryPercent-end.batteryPercent).toDouble()/elapsed
