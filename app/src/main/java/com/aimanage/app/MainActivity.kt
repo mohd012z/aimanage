@@ -43,7 +43,8 @@ private fun AimanageUI() {
  val context = LocalContext.current
  var selected by remember { mutableStateOf("Overview") }
  var drawer by remember { mutableStateOf(false) }
- val batteryIntent = remember { context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }
+ var deviceRefresh by remember { mutableIntStateOf(0) }
+ val batteryIntent = remember(deviceRefresh) { context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }
  val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
  val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
  val pct = if (level >= 0 && scale > 0) level * 100 / scale else null
@@ -82,6 +83,7 @@ private fun AimanageUI() {
        Text("Battery  ${pct?.let { "$it%" } ?: "Unavailable"}", style = MaterialTheme.typography.headlineMedium)
        Text("Thermal status  $thermal", color = Muted)
        Text("Device  ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
+       Action("Refresh device health") { deviceRefresh++ }
       } }
       item { Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
        Box(Modifier.weight(1f)) { SmallCard("Apps","Manage", Icons.Default.Apps) { selected = "App Management" } }
@@ -138,7 +140,7 @@ private fun AimanageUI() {
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
   if(section == "Battery" || section == "Battery Care" || section == "Standby Intelligence") {
    val context = LocalContext.current
-   val b = remember { DeviceReadings.battery(context) }
+   var b by remember(section) { mutableStateOf(DeviceReadings.battery(context)) }
    Text("Charge: ${b.percent?.let { "$it%" } ?: "Unavailable"}")
    Text("Charging: ${if(b.charging) "Yes" else "No"}")
    Text("Battery temperature: ${b.temperatureC?.let { "$it °C" } ?: "Unavailable"}")
@@ -146,17 +148,19 @@ private fun AimanageUI() {
    Text("Current: ${b.currentMa?.let { "$it mA" } ?: "Unavailable"}")
    Text("Charge counter: ${b.chargeCounterMah?.let { "$it mAh" } ?: "Unavailable"}")
    Text("Battery health code: ${b.healthCode ?: "Unavailable"} (system status, not capacity estimate)")
+   Action("Refresh battery readings") { b = DeviceReadings.battery(context) }
    Text("Charging limits cannot be controlled by ordinary Android apps.",color=Muted)
    Text("Standby drain history and charging alerts: planned.",color=Muted)
   }
   if(section == "Charging Intelligence" || section == "Brightness & Power" || section == "AI Assistant") {
    val context = LocalContext.current
-   val d = remember { ChargingDiagnostics.assess(context) }
+   var d by remember(section) { mutableStateOf(ChargingDiagnostics.assess(context)) }
    Text("Battery-side charging power: ${d.batteryPowerW?.let { "%.1f W".format(it) } ?: "Unavailable"}")
    Text("Brightness setting: ${d.brightnessPercent?.let { "$it%" } ?: "Unavailable"}")
    Text("Adaptive brightness: ${d.adaptiveBrightness?.toString() ?: "Unavailable"}")
    Text("Power saver: ${if(d.powerSaveEnabled) "On" else "Off"}")
    d.observations.forEach { Text("• $it", color=Muted) }
+   Action("Refresh charging and display readings") { d = ChargingDiagnostics.assess(context) }
    Action("Open display settings") { open(Settings.ACTION_DISPLAY_SETTINGS) }
    Action("Open battery saver") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
    Text("Charging alerts and interactive AI chat are planned; this screen currently provides rule-based observations.",color=Muted)
