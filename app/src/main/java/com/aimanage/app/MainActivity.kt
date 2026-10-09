@@ -263,6 +263,7 @@ private fun AimanageUI() {
     })
    }
    Text("Best-effort sampling approximately every 30 minutes. Android may delay background work.",color=Muted)
+   Text("Background monitoring: ${TelemetryScheduler.health(appContext)}",color=Muted)
    val lastRun=TelemetryScheduler.lastSuccess(appContext)
    Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}",color=Muted)
    TelemetryScheduler.lastError(appContext)?.let { Text("Last worker error category: $it",color=Muted) }
