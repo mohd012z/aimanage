@@ -365,7 +365,7 @@ private fun AimanageUI() {
      shape=RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth()) {
      Column(Modifier.padding(12.dp)) {
       Text(if(user) "You" else "AImanage",color=if(user) Cyan else Color.White,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.labelMedium)
-      Text(message,color=Color.White)
+      Text(if(!user && !context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE).getBoolean("show_explanations",true)) message.take(190)+if(message.length>190) "…" else "" else message,color=Color.White)
      }
     }
    }
@@ -374,8 +374,11 @@ private fun AimanageUI() {
     Icon(Icons.Default.Send,null); Spacer(Modifier.width(8.dp));Text("Send question")
    }
    Text("Try a question",color=Muted,style=MaterialTheme.typography.labelMedium)
-   listOf("apps background","Cooling and thermal","How to save battery without slowing apps?","What drains battery overnight?","CPU and RAM","Free VPN options").forEach { prompt ->
-    OutlinedButton(onClick={ask(prompt)},modifier=Modifier.fillMaxWidth()) { Text(prompt) }
+   val uiPrefs=remember { context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE) }
+   if(uiPrefs.getBoolean("quick_prompts",true)) {
+    listOf("apps background","Cooling and thermal","How to save battery without slowing apps?","What drains battery overnight?","CPU and RAM","Free VPN options").forEach { prompt ->
+     OutlinedButton(onClick={ask(prompt)},modifier=Modifier.fillMaxWidth()) { Text(prompt) }
+    }
    }
    settingsAction?.let { action -> Action("Review suggested Android settings") { open(action) } }
    proposed?.let { enabled ->
@@ -541,9 +544,14 @@ private fun AimanageUI() {
    Text(provider.note,color=Muted)
    Text(PublicVpnCatalog.explanation(mode,provider),color=Muted)
    if(mode!=VpnAdviceMode.OFF) {
-    Action("Open official ${provider.name} information") {
-     try { context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(provider.homepage))) }
-     catch (_:Exception) { open(Settings.ACTION_VPN_SETTINGS) }
+    Text("Setup requires your confirmation in the provider app and Android. AImanage cannot create a VPN server profile automatically.",color=Muted)
+    Action("Set up ${provider.name} (user-confirmed)") {
+     val packageId=PublicVpnCatalog.packageName(provider)
+     val installed=packageId?.let { context.packageManager.getLaunchIntentForPackage(it) }
+     try {
+      if(installed!=null) context.startActivity(installed)
+      else context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(provider.homepage)))
+     } catch (_:Exception) { open(Settings.ACTION_VPN_SETTINGS) }
     }
    }
    Action("Review system VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
@@ -561,6 +569,25 @@ private fun AimanageUI() {
    Action("Open VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
   }
   if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal")
+  if(section == "Settings") {
+   val ctx=LocalContext.current
+   val prefs=remember { ctx.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE) }
+   var quickPrompts by remember { mutableStateOf(prefs.getBoolean("quick_prompts",true)) }
+   var descriptions by remember { mutableStateOf(prefs.getBoolean("show_explanations",true)) }
+   Text("AImanage preferences",color=Cyan,fontWeight=FontWeight.Bold)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Show AI quick questions",modifier=Modifier.weight(1f))
+    Switch(checked=quickPrompts,onCheckedChange={quickPrompts=it;prefs.edit().putBoolean("quick_prompts",it).apply()})
+   }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Show detailed explanations",modifier=Modifier.weight(1f))
+    Switch(checked=descriptions,onCheckedChange={descriptions=it;prefs.edit().putBoolean("show_explanations",it).apply()})
+   }
+   Text("Preferences are stored only on this device; they do not change Android permissions or stop other apps.",color=Muted)
+   Action("Configure local AI Learning and alerts") { open(Settings.ACTION_APPLICATION_SETTINGS) }
+   Action("Review battery settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+   Action("Manage Android notifications") { open(Settings.ACTION_APP_NOTIFICATION_SETTINGS) }
+  }
   if(section == "Device Information") { Text("Model: ${Build.MANUFACTURER} ${Build.MODEL}"); Text("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})") }
   Action("Open Android app settings") { open(Settings.ACTION_APPLICATION_SETTINGS) }
   Action("Open battery saver settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
