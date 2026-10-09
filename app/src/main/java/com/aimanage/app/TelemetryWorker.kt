@@ -17,8 +17,12 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
    val sample=DeviceLearningEngine.capture(applicationContext)
    DeviceLearningEngine.record(applicationContext,sample)
    DeviceAlertEngine.check(applicationContext,sample)
+   prefs.edit().putLong("telemetry_last_success",System.currentTimeMillis()).remove("telemetry_last_error").apply()
    Result.success()
-  } catch (_:Exception) { Result.retry() }
+  } catch (error:Exception) {
+   prefs.edit().putString("telemetry_last_error",error.javaClass.simpleName).apply()
+   Result.retry()
+  }
  }
 }
 object TelemetryScheduler {
@@ -32,6 +36,8 @@ object TelemetryScheduler {
    manager.enqueueUniquePeriodicWork(NAME,ExistingPeriodicWorkPolicy.KEEP,request)
   } else manager.cancelUniqueWork(NAME)
  }
+ fun lastSuccess(context:Context):Long=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_last_success",0L)
+ fun lastError(context:Context):String?=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getString("telemetry_last_error",null)
  fun enabled(context:Context)=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
   .getBoolean("telemetry_enabled",false)
 }
