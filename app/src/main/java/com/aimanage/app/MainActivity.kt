@@ -312,6 +312,19 @@ private fun AimanageUI() {
    var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
    LaunchedEffect(samplesRefresh) { samples=DeviceLearningEngine.load(context) }
    Text("Local learning samples: ${samples.size}")
+   var adviceProfile by remember { mutableStateOf(AdviceProfile.BALANCED) }
+   Text("Device optimization profile (advice only)",fontWeight=FontWeight.Bold)
+   AdviceProfile.values().forEach { profile ->
+    Row(verticalAlignment=Alignment.CenterVertically) {
+     RadioButton(selected=adviceProfile==profile,onClick={adviceProfile=profile})
+     Text(profile.name.replace('_',' ').lowercase().replaceFirstChar { it.titlecase() })
+    }
+   }
+   val measured=DeviceMeasurementPolicy.discharge(samples.map {
+    DischargeSegmentPolicy.Point(it.timestamp,it.batteryPercent,it.charging)
+   })
+   Text(DeviceMeasurementPolicy.recommendation(adviceProfile,measured,samples.lastOrNull()?.thermalStatus ?: thermal),color=Muted)
+   Text("Advisory only: no app was closed, throttled, restricted or reconfigured.",color=Muted)
    var captureMessage by remember { mutableStateOf("") }
    Action("Capture device snapshot") {
     val before=samples.size
