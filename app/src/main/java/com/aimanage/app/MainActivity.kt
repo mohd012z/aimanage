@@ -1,6 +1,7 @@
 package com.aimanage.app
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
@@ -267,7 +268,9 @@ private fun AimanageUI() {
    Text("Background monitoring: ${TelemetryScheduler.health(appContext, System.currentTimeMillis()+monitoringRefresh*0L)}",color=Muted)
    Action("Refresh monitoring status") { monitoringRefresh++ }
    val lastRun=TelemetryScheduler.lastSuccess(appContext)
-   Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}",color=Muted)
+   val enabledSince=appContext.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_enabled_since",0L)
+   val currentRun=lastRun>0L && lastRun>=enabledSince
+   Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}${if(sampling && !currentRun && lastRun>0L) " (previous monitoring session)" else ""}",color=Muted)
    TelemetryScheduler.lastError(appContext)?.let { Text("Last worker error category: $it",color=Muted) }
 
    val context = LocalContext.current
