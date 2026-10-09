@@ -6,19 +6,30 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 
 /**
- * Local-only notification automation. Disabled until the user grants
- * Notification Access AND explicitly enables rules inside AImanage.
- * Does not store notification contents.
+ * Local, opt-in notification rules. Does not read, store or upload message text.
+ * System and safety-critical notifications are excluded even when an app is listed.
  */
 class AimanageNotificationListener : NotificationListenerService() {
  override fun onNotificationPosted(sbn: StatusBarNotification?) {
-  if (sbn == null || sbn.packageName == packageName) return
-  val prefs = getSharedPreferences("aimanage_rules", Context.MODE_PRIVATE)
-  if (!prefs.getBoolean("automation_enabled", false)) return
-  val allow = prefs.getStringSet("dismiss_packages", emptySet()) ?: emptySet()
-  val protected = setOf("com.android.dialer","com.google.android.dialer","com.android.phone","com.android.systemui")
-  if (sbn.packageName in protected || sbn.packageName !in allow) return
-  if (sbn.isOngoing || sbn.notification.flags and Notification.FLAG_FOREGROUND_SERVICE != 0) return
+  if (sbn == null) return
+  val prefs=getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
+  val enabled=prefs.getBoolean("automation_enabled",false)
+  if(!enabled) return
+  val allow=prefs.getStringSet("dismiss_packages",emptySet())?.toSet() ?: emptySet()
+  val notification=sbn.notification
+  val permitted=NotificationDismissPolicy.canDismiss(
+   automationEnabled=enabled,
+   sourcePackage=sbn.packageName,
+   ownPackage=packageName,
+   allowlistedPackages=allow,
+   ongoing=sbn.isOngoing,
+   foregroundService=notification.flags and Notification.FLAG_FOREGROUND_SERVICE != 0,
+   clearable=sbn.isClearable,
+   category=notification.category,
+   hasFullScreenIntent=notification.fullScreenIntent != null,
+   secretVisibility=notification.visibility == Notification.VISIBILITY_SECRET
+  )
+  if(!permitted) return
   try { cancelNotification(sbn.key) } catch (_: SecurityException) { }
  }
 }
