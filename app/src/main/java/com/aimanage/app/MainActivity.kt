@@ -48,7 +48,7 @@ private fun AimanageUI() {
  val batteryIntent = remember(deviceRefresh) { context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }
  val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
  val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
- val pct = if (level >= 0 && scale > 0) level * 100 / scale else null
+ val pct = BatteryPercentagePolicy.fromLevelAndScale(level, scale)
  val pm = context.getSystemService(PowerManager::class.java)
  val thermal = if (Build.VERSION.SDK_INT >= 29) when(pm?.currentThermalStatus) {
   PowerManager.THERMAL_STATUS_NONE -> "Normal"
@@ -185,6 +185,9 @@ private fun AimanageUI() {
    var enabled by remember { mutableStateOf(prefs.getBoolean("automation_enabled",false)) }
    var packageInput by remember { mutableStateOf("") }
    var packages by remember { mutableStateOf(prefs.getStringSet("dismiss_packages",emptySet())?.toSet() ?: emptySet()) }
+   if (!context.packageName.endsWith(".advanced")) {
+    Text("Standard edition: Notification Access and Usage Access are not requested. Notification automation is unavailable.",color=Muted)
+   } else {
    Text("Notification automation is opt-in and only applies to explicitly selected apps.",color=Muted)
    Row(verticalAlignment=Alignment.CenterVertically) {
     Text("Enable notification rules",modifier=Modifier.weight(1f))
@@ -209,6 +212,7 @@ private fun AimanageUI() {
    }
    Text("Calls, alarms, messages, calendar events, group summaries, system/security alerts and ongoing notifications are protected from auto-dismissal.",color=Muted)
    Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
+   }
   }
   if(section == "CPU & App Activity" || section == "Standby Intelligence") {
    val context = LocalContext.current
@@ -216,7 +220,8 @@ private fun AimanageUI() {
    Text("Thermal pressure: ${report.thermalStatus}")
    Text("Battery Saver: ${if(report.powerSaver) "Enabled" else "Disabled"}")
    Text("Usage access: ${if(report.usageAccessGranted) "Granted" else "Required"}")
-   if(!report.usageAccessGranted) Action("Grant usage access") { open(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+   if(!report.usageAccessGranted && context.packageName.endsWith(".advanced")) Action("Grant usage access") { open(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+   if(!context.packageName.endsWith(".advanced")) Text("Per-app usage history requires the separately installed Advanced edition and explicit user permission.",color=Muted)
    Action("Refresh app activity") { report=ActivityMonitor.report(context) }
    report.recentApps.forEach { app ->
     Text("${app.packageName} — ${app.foregroundMinutes} min foreground",color=Muted,style=MaterialTheme.typography.bodySmall)
