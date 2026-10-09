@@ -20,6 +20,7 @@ object DeviceAlertEngine {
  }
  fun check(context:Context,sample:DeviceLearningSample) {
   if(!enabled(context)) return
+  if(!TelemetryScheduler.enabled(context)) return
   if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return
   val critical=sample.thermalStatus in setOf("Severe","Critical","Emergency","Shutdown")
   val warm=sample.batteryTempC?.let { it>=40f } ?: false
