@@ -12,8 +12,8 @@
     </queries>
 
     <application
-        android:icon="@drawable/aimanage_icon"
-        android:roundIcon="@drawable/aimanage_icon"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="AImanage"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
