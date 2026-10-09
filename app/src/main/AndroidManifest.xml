@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:icon="@drawable/aimanage_icon"
+        android:roundIcon="@drawable/aimanage_icon"
         android:label="AImanage"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
