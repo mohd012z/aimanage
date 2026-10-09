@@ -263,7 +263,9 @@ private fun AimanageUI() {
     })
    }
    Text("Best-effort sampling approximately every 30 minutes. Android may delay background work.",color=Muted)
-   Text("Background monitoring: ${TelemetryScheduler.health(appContext)}",color=Muted)
+   var monitoringRefresh by remember { mutableIntStateOf(0) }
+   Text("Background monitoring: ${TelemetryScheduler.health(appContext, System.currentTimeMillis()+monitoringRefresh*0L)}",color=Muted)
+   Action("Refresh monitoring status") { monitoringRefresh++ }
    val lastRun=TelemetryScheduler.lastSuccess(appContext)
    Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}",color=Muted)
    TelemetryScheduler.lastError(appContext)?.let { Text("Last worker error category: $it",color=Muted) }
@@ -284,7 +286,7 @@ private fun AimanageUI() {
     DeviceLearningEngine.clear(context)
     samples=emptyList()
    }
-   Text("Learning is rule-based and on-device. Automatic background sampling and model training are not enabled.",color=Muted)
+   Text("Learning is rule-based and on-device. Automatic sampling runs only when enabled; no model training or cloud upload.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
