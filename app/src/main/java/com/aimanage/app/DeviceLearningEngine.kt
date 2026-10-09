@@ -75,8 +75,8 @@ object DeviceLearningEngine {
   if(latest.size>=2) {
    val first=latest.first(); val end=latest.last()
    val elapsed=(end.timestamp-first.timestamp)/3600000.0
-   if(elapsed>=1 && end.batteryPercent!! <= first.batteryPercent!!) {
-    val rate=(first.batteryPercent-end.batteryPercent).toDouble()/elapsed
+   if(elapsed>=1 && end.percent!! <= first.percent!!) {
+    val rate=(first.percent!!-end.percent!!).toDouble()/elapsed
     if(rate>=5) insights += DeviceInsight("CAUTION","High observed discharge rate",
      String.format(Locale.US,"%.1f percentage points/hour across %.1f hours; not necessarily screen-off drain.",rate,elapsed),
      "Compare a dedicated screen-off session and review recent app usage.")
