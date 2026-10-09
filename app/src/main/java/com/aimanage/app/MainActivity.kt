@@ -133,7 +133,7 @@ private fun AimanageUI() {
   "Apps","App Management","Background & Autostart" -> "Android restricts silent third-party app control. Open system settings to manage autostart and background restrictions."
   "Thermal","CPU & Thermal" -> "Read-only thermal status. No CPU governor or cooling hardware control."
   "Battery" -> "Battery charge reading and Android battery settings."
-  "Network","Network & Speed" -> "Network monitoring and per-app rate limits are future work."
+  "Network","Network & Speed" -> "Read-only active network and Android connectivity validation; real throughput testing and per-app rate limits are not implemented."
   "Protect","Ad Blocker","Firewall","VPN" -> "No in-app VPN or firewall is active. Private DNS can be set by you in Android Settings; AImanage cannot change it silently."
   "Permissions" -> "Only request permissions when a working feature needs them."
   else -> "System information and Android settings."
