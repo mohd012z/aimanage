@@ -32,8 +32,8 @@ private val Navy = Color(0xFF101A32)
 private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
-private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val tabs = listOf("Home","Apps","Network","Protect","AI")
+private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Sleep Check","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -60,12 +60,12 @@ private fun AimanageUI() {
   PowerManager.THERMAL_STATUS_SHUTDOWN -> "Shutdown"
   else -> "Unavailable"
  } else "Unavailable"
- MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, background = Navy, surface = Panel, onSurface = Color.White)) {
+ MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, onPrimary = Navy, background = Navy, onBackground = Color.White, surface = Panel, onSurface = Color.White, surfaceVariant = Panel, onSurfaceVariant = Muted, outline = Muted)) {
   Column(Modifier.fillMaxSize().background(Navy)) {
    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories") }
-    Column(Modifier.weight(1f)) { Text("AImanage", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold); Text("Android Device Intelligence", color = Muted, style = MaterialTheme.typography.labelSmall) }
-    IconButton(onClick = { selected = "Settings" }) { Icon(Icons.Default.Settings, "Settings") }
+    IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories", tint=Color.White) }
+    Column(Modifier.weight(1f)) { Text("AImanage",color=Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold); Text("Android Device Intelligence", color = Muted, style = MaterialTheme.typography.labelSmall) }
+    IconButton(onClick = { selected = "Settings" }) { Icon(Icons.Default.Settings, "Settings",tint=Cyan) }
    }
    Row(Modifier.weight(1f)) {
     if (drawer) {
@@ -78,10 +78,10 @@ private fun AimanageUI() {
      }
     }
     LazyColumn(Modifier.weight(1f).fillMaxHeight(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-     item { Text(selected, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+     item { Text(selected, color=Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
      if(selected == "Overview" || selected == "Home") {
       item { PanelCard("Device Health", "Live battery and thermal snapshot", Icons.Default.Favorite) {
-       Text("Battery  ${pct?.let { "$it%" } ?: "Unavailable"}", style = MaterialTheme.typography.headlineMedium)
+       Text("Battery  ${pct?.let { "$it%" } ?: "Unavailable"}", color=Color.White,style = MaterialTheme.typography.headlineMedium)
        Text("Thermal status  $thermal", color = Muted)
        Text("Device  ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
        Action("Refresh device health") { deviceRefresh++ }
@@ -100,13 +100,13 @@ private fun AimanageUI() {
        Action("Device settings") { launch(context, Settings.ACTION_SETTINGS) }
       } }
      } else {
-      item { DetailSection(selected, pct, thermal) { action -> launch(context, action) } }
+      item { DetailSection(if(selected=="AI") "AI Assistant" else selected, pct, thermal) { action -> launch(context, action) } }
      }
     }
    }
    NavigationBar(containerColor = Panel) {
     tabs.forEach { tab ->
-     val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Thermal" -> Icons.Default.DeviceThermostat; "Network" -> Icons.Default.Wifi; else -> Icons.Default.Shield }
+     val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Network" -> Icons.Default.Wifi; "AI" -> Icons.Default.SmartToy; else -> Icons.Default.Shield }
      NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview"), onClick = { selected = tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
     }
    }
@@ -116,7 +116,7 @@ private fun AimanageUI() {
 @Composable private fun PanelCard(title:String,subtitle:String,icon:androidx.compose.ui.graphics.vector.ImageVector,body:@Composable ColumnScope.()->Unit) {
  Card(colors=CardDefaults.cardColors(containerColor=Panel),shape=RoundedCornerShape(20.dp),modifier=Modifier.fillMaxWidth()) {
   Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-   Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) { Icon(icon,null,tint=Cyan); Text(title,fontWeight=FontWeight.Bold) }
+   Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) { Icon(icon,null,tint=Cyan); Text(title,color=Color.White,fontWeight=FontWeight.Bold) }
    Text(subtitle,color=Muted,style=MaterialTheme.typography.bodySmall)
    body()
   }
@@ -127,18 +127,84 @@ private fun AimanageUI() {
   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) { Icon(icon,null,tint=Cyan); Text(title,fontWeight=FontWeight.Bold); Text(status,color=Muted,style=MaterialTheme.typography.labelSmall) }
  }
 }
-@Composable private fun Action(label:String,click:()->Unit) { OutlinedButton(onClick=click,modifier=Modifier.fillMaxWidth()) { Text(label) } }
+@Composable private fun Action(label:String,click:()->Unit) { OutlinedButton(onClick=click,modifier=Modifier.fillMaxWidth()) { Text(label,color=Cyan) } }
 @Composable private fun DetailSection(section:String,pct:Int?,thermal:String,open:(String)->Unit) {
  val description = when(section) {
-  "Apps","App Management","Background & Autostart" -> "Android restricts silent third-party app control. Open system settings to manage autostart and background restrictions."
-  "Thermal","CPU & Thermal" -> "Read-only thermal status. No CPU governor or cooling hardware control."
+  "Apps","App Management","Background & Autostart" -> "Review recent activity with evidence. Only Android Settings can restrict or uninstall other apps; never force-stop important services automatically."
+  "Thermal","CPU & Thermal" -> "Live Android thermal status and safer cooling advice. Background CPU usage by other apps is not available to normal apps."
   "Battery" -> "Battery charge reading and Android battery settings."
   "Network","Network & Speed" -> "Read-only active network and Android connectivity validation; real throughput testing and per-app rate limits are not implemented."
-  "Protect","Ad Blocker","Firewall","VPN" -> "No in-app VPN or firewall is active. Private DNS can be set by you in Android Settings; AImanage cannot change it silently."
+  "Protect","Ad Blocker","Firewall","VPN" -> "Protection guidance: security review, Private DNS, notification settings and VPN status. No active firewall or VPN tunnel."
   "Permissions" -> "Only request permissions when a working feature needs them."
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
+  if(section == "Apps" || section == "App Management" || section == "Background & Autostart") {
+   val ctx=LocalContext.current
+   var activity by remember { mutableStateOf(ActivityMonitor.report(ctx)) }
+   Text("App review • evidence-based",fontWeight=FontWeight.Bold,color=Cyan)
+   Text(if(ctx.packageName.endsWith(".advanced"))
+    "Optional Usage Access shows past foreground time, NOT running background processes or app-specific battery drain."
+    else "Standard edition deliberately has no sensitive Usage Access. See Android Battery > App battery usage for verified per-app energy use.",color=Muted)
+   if(!activity.usageAccessGranted && ctx.packageName.endsWith(".advanced"))
+    Action("Grant optional usage access") { open(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+   AppReviewPolicy.recentUsage(activity.recentApps,ctx.packageName).forEach { finding ->
+    HorizontalDivider(color=Muted.copy(alpha=0.35f))
+    Text(finding.packageName,color=Color.White,fontWeight=FontWeight.SemiBold)
+    Text("Foreground (past 24h): ${finding.foregroundMinutes} min",color=Muted)
+    Text(finding.note,color=Muted,style=MaterialTheme.typography.bodySmall)
+    Action("Review app in Android Settings") { openAppDetails(ctx,finding.packageName) }
+   }
+   Text(AppReviewPolicy.safetyNotice(),color=Muted)
+   Action("Refresh observed app activity") { activity=ActivityMonitor.report(ctx) }
+   Action("Open Android Battery settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+   Action("Review installed apps / uninstall manually") { open(Settings.ACTION_APPLICATION_SETTINGS) }
+  }
+  if(section == "Protect") {
+   Text("Safety-first phone protection",fontWeight=FontWeight.Bold,color=Cyan)
+   Text("Review installed apps in Android Settings; only uninstall software you recognize as unneeded. Do not remove system, authentication, work, accessibility or security services.",color=Muted)
+   Action("Review apps and permissions") { open(Settings.ACTION_APPLICATION_SETTINGS) }
+   Text("Reduce notification noise without missing calls, alarms, chats or security alerts. Adjust unimportant app categories in Android Settings.",color=Muted)
+   Action("Review notification settings") { open(Settings.ACTION_APP_NOTIFICATION_SETTINGS) }
+   Text("Private DNS can filter some ad domains, but AImanage does not alter DNS or intercept traffic.",color=Muted)
+   Action("Open network / Private DNS settings") { open(Settings.ACTION_WIRELESS_SETTINGS) }
+   Action("Review existing VPN") { open(Settings.ACTION_VPN_SETTINGS) }
+  }
+  if(section == "Thermal" || section == "CPU & Thermal") {
+   val ctx=LocalContext.current
+   var reading by remember { mutableStateOf(DeviceReadings.battery(ctx)) }
+   Text("Battery temperature: ${reading.temperatureC?.let { "$it °C" } ?: "Unavailable"}",color=Color.White)
+   Text("Cooling advice",fontWeight=FontWeight.Bold,color=Cyan)
+   Text("If the phone is hot, pause demanding foreground tasks, avoid direct sunlight and heavy charging, and allow Android thermal safeguards to work. There is no reliable per-app heat attribution or forced cooling available to this app.",color=Muted)
+   Action("Refresh battery temperature") { reading=DeviceReadings.battery(ctx) }
+  }
+  if(section == "Standby Intelligence" || section == "Sleep Check") {
+   val ctx=LocalContext.current
+   val prefs=remember { ctx.getSharedPreferences("sleep_baseline",Context.MODE_PRIVATE) }
+   var startedAt by remember { mutableLongStateOf(prefs.getLong("started_at",0L)) }
+   var startPercent by remember { mutableIntStateOf(prefs.getInt("start_percent",-1)) }
+   var outcome by remember { mutableStateOf("No sleep comparison captured yet.") }
+   Text("Overnight idle baseline • manual comparison",fontWeight=FontWeight.Bold,color=Cyan)
+   Text("Before sleep, tap Start; after waking, tap Finish. AImanage compares battery percentage at both moments. It cannot prove that the screen remained off or identify which app caused any drain.",color=Muted)
+   Text(if(startedAt>0) "Baseline started: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(startedAt))} at $startPercent%" else "Baseline not started.",color=Muted)
+   Action("Start bedtime battery baseline") {
+    val b=DeviceReadings.battery(ctx)
+    if(b.percent!=null && !b.charging) {
+     startedAt=System.currentTimeMillis();startPercent=b.percent
+     prefs.edit().putLong("started_at",startedAt).putInt("start_percent",startPercent).apply()
+     outcome="Baseline started; compare after at least one hour without charging."
+    } else outcome="Unplug charging and check battery reading before starting."
+   }
+   Action("Finish and compare after sleep") {
+    val b=DeviceReadings.battery(ctx)
+    val result=SleepBaselinePolicy.calculate(startedAt,startPercent,System.currentTimeMillis(),b.percent ?: -1,b.charging)
+    outcome=if(result==null) "No reliable baseline: requires 1–24 hours, discharging and valid battery levels. A charging or clock-changed session cannot be compared."
+      else "Observed ${result.percentPointsLost} percentage points over ${"%.1f".format(result.elapsedHours)} hours (${"%.2f".format(result.pointsPerHour)} points/hour). This is a whole-device observation, not per-app attribution."
+    if(result!=null){startedAt=0L;startPercent=-1;prefs.edit().clear().apply()}
+   }
+   Text(outcome,color=Muted)
+   Text("While sleeping, Android may use Doze/App Standby to defer background jobs and network access, while permitted calls, alarms and priority alerts can still wake the device. Charging, Wi-Fi/cellular signal and notifications can affect observed use.",color=Muted)
+  }
   if(section == "Battery" || section == "Battery Care" || section == "Standby Intelligence") {
    val context = LocalContext.current
    var b by remember(section) { mutableStateOf(DeviceReadings.battery(context)) }
@@ -370,12 +436,19 @@ private fun AimanageUI() {
    Action("Open network / Private DNS settings") { open(Settings.ACTION_WIRELESS_SETTINGS) }
    Action("Open VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
   }
-  if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal")
+  if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal",color=Color.White)
   if(section == "Device Information") { Text("Model: ${Build.MANUFACTURER} ${Build.MODEL}"); Text("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})") }
   Action("Open Android app settings") { open(Settings.ACTION_APPLICATION_SETTINGS) }
   Action("Open battery saver settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
   Action("Open system settings") { open(Settings.ACTION_SETTINGS) }
  }
+}
+private fun openAppDetails(context:Context,packageId:String) {
+ try {
+  val intent=Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+   android.net.Uri.parse("package:$packageId"))
+  context.startActivity(intent)
+ } catch (_:Exception) { launch(context,Settings.ACTION_APPLICATION_SETTINGS) }
 }
 private fun launch(context:android.content.Context,action:String) {
  try { context.startActivity(Intent(action)) } catch (_:Exception) { context.startActivity(Intent(Settings.ACTION_SETTINGS)) }
