@@ -202,7 +202,7 @@ private fun AimanageUI() {
      TextButton(onClick={packages=packages-p;prefs.edit().putStringSet("dismiss_packages",packages).apply()}) { Text("Remove") }
     }
    }
-   Text("Protected call/system notifications and ongoing foreground-service notifications are not auto-dismissed.",color=Muted)
+   Text("Calls, alarms, reminders, system/security alerts and ongoing notifications are protected from auto-dismissal.",color=Muted)
    Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
   }
   if(section == "CPU & App Activity" || section == "Standby Intelligence") {
