@@ -275,8 +275,9 @@ private fun AimanageUI() {
    Action("Refresh monitoring status") { monitoringRefresh++; samplesRefresh++ }
    val currentRun=lastRun>0L && lastRun>=enabledSince
    Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}${if(sampling && !currentRun && lastRun>0L) " (previous monitoring session)" else ""}",color=Muted)
-   workerError?.let {
-    Text("Last worker error category: $it",color=Muted)
+   if(sampling && workerError!=null) {
+    val previousError=workerErrorAt>0L && workerErrorAt<enabledSince
+    Text("Last worker error category: $workerError${if(previousError) " (previous monitoring session)" else ""}",color=Muted)
     if(workerErrorAt>0L) Text("Last worker error time: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(workerErrorAt))}",color=Muted)
    }
 
