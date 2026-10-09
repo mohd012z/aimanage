@@ -273,10 +273,14 @@ private fun AimanageUI() {
    val context = LocalContext.current
    var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
    Text("Local learning samples: ${samples.size}")
+   var captureMessage by remember { mutableStateOf("") }
    Action("Capture device snapshot") {
+    val before=samples.size
     DeviceLearningEngine.record(context,DeviceLearningEngine.capture(context))
     samples=DeviceLearningEngine.load(context)
+    captureMessage=if(samples.size>before) "Snapshot saved locally." else "Snapshot not added: samples are limited to one every 15 minutes."
    }
+   if(captureMessage.isNotBlank()) Text(captureMessage,color=Muted)
    DeviceLearningEngine.analyze(samples).forEach { insight ->
     Text("${insight.severity}: ${insight.title}",fontWeight=FontWeight.Bold)
     Text(insight.evidence,color=Muted)
