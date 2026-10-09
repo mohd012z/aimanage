@@ -28,6 +28,16 @@ class DeviceMeasurementPolicyTest {
   assertEquals(4.0,result!!.percentPointsPerHour,0.0001)
  }
 
+ @Test fun currentTrendRequiresFreshAndNonFutureMeasurements() {
+  val points=listOf(p(1,90),p(2,85),p(3,80))
+  val newest=3L*3_600_000L
+  assertEquals(5.0,DeviceMeasurementPolicy.recentDischarge(points,newest)!!.percentPointsPerHour,0.0001)
+  assertEquals(5.0,DeviceMeasurementPolicy.recentDischarge(points,newest+3L*3_600_000L)!!.percentPointsPerHour,0.0001)
+  assertNull(DeviceMeasurementPolicy.recentDischarge(points,newest+3L*3_600_000L+1L))
+  assertNull(DeviceMeasurementPolicy.recentDischarge(points,newest-1L))
+  assertNull(DeviceMeasurementPolicy.recentDischarge(emptyList(),newest))
+ }
+
  @Test fun profilesDoNotMisrepresentScreenOffOrThermalSafety() {
   for(profile in AdviceProfile.values()) {
    val advice=DeviceMeasurementPolicy.recommendation(profile,DischargeMeasurement(5.0,2.0),"Normal")
