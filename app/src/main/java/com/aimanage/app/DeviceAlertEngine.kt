@@ -13,7 +13,6 @@ import android.os.Build
 object DeviceAlertEngine {
  private const val CHANNEL="device_health_alerts"
  private const val PREFS="aimanage_rules"
- private const val COOLDOWN=2*60*60*1000L
  fun enabled(context:Context)=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getBoolean("health_alerts_enabled",false)
  fun setEnabled(context:Context,value:Boolean) {
   context.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().putBoolean("health_alerts_enabled",value).apply()
@@ -23,12 +22,11 @@ object DeviceAlertEngine {
   if(!TelemetryScheduler.enabled(context)) return
   if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return
   val critical=sample.thermalStatus in setOf("Severe","Critical","Emergency","Shutdown")
-  val warm=sample.batteryTempC?.let { it>=40f } ?: false
-  if(!critical && !warm) return
+  if(!HealthAlertPolicy.isElevatedTemperature(sample.thermalStatus,sample.batteryTempC)) return
   val prefs=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE)
   val now=System.currentTimeMillis()
   val last=prefs.getLong("last_health_alert",0L)
-  if(now-last<COOLDOWN) return
+  if(!HealthAlertPolicy.canNotify(now,last)) return
   val manager=context.getSystemService(NotificationManager::class.java)
   manager.createNotificationChannel(NotificationChannel(CHANNEL,"Device health alerts",NotificationManager.IMPORTANCE_DEFAULT))
   val intent=Intent(context,MainActivity::class.java)
