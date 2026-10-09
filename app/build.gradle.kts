@@ -6,6 +6,23 @@ android { namespace = "com.aimanage.app"; compileSdk = 35
   create("standard") { dimension = "access" }
   create("advanced") { dimension = "access"; applicationIdSuffix = ".advanced"; versionNameSuffix = "-advanced" }
  }
+ // Production signing is injected only from protected CI secrets or a local secure environment.
+ // Never commit a key, password, or release signing material to this repository.
+ val releaseStorePath = System.getenv("AIMANAGE_RELEASE_KEYSTORE_PATH")
+ val releaseStorePassword = System.getenv("AIMANAGE_RELEASE_STORE_PASSWORD")
+ val releaseKeyAlias = System.getenv("AIMANAGE_RELEASE_KEY_ALIAS")
+ val releaseKeyPassword = System.getenv("AIMANAGE_RELEASE_KEY_PASSWORD")
+ if (listOf(releaseStorePath,releaseStorePassword,releaseKeyAlias,releaseKeyPassword).all { !it.isNullOrBlank() }) {
+  signingConfigs {
+   create("secureRelease") {
+    storeFile = file(releaseStorePath!!)
+    storePassword = releaseStorePassword
+    keyAlias = releaseKeyAlias
+    keyPassword = releaseKeyPassword
+   }
+  }
+  buildTypes.getByName("release").signingConfig = signingConfigs.getByName("secureRelease")
+ }
  buildFeatures { compose = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
