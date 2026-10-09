@@ -3,6 +3,7 @@ package com.aimanage.app
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -33,7 +34,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
-private val sections = listOf("Overview","App Management","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -228,6 +229,90 @@ private fun AimanageUI() {
    }
    report.notes.forEach { Text("• $it",color=Muted,style=MaterialTheme.typography.bodySmall) }
   }
+  if(section == "App Review" || section == "App Management") {
+   val context=LocalContext.current
+   var packageName by remember { mutableStateOf("") }
+   var unneeded by remember { mutableStateOf(false) }
+   var unwantedAlerts by remember { mutableStateOf(false) }
+   var batteryEvidence by remember { mutableStateOf(false) }
+   var essential by remember { mutableStateOf(false) }
+   val valid=packageName.trim().matches(Regex("[A-Za-z0-9_]+(\\\\.[A-Za-z0-9_]+)+"))
+   Text("App review assistant",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+   Text("Enter an exact package ID from Android App Info. AImanage cannot identify live background services or measure another app's CPU load; it does not close apps automatically.",color=Muted)
+   OutlinedTextField(value=packageName,onValueChange={packageName=it},label={Text("Package ID (example: com.example.app)")},modifier=Modifier.fillMaxWidth(),singleLine=true)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=essential,onCheckedChange={essential=it})
+    Text("Essential: calls, messages, navigation, alarms or work",modifier=Modifier.weight(1f))
+   }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=unwantedAlerts,onCheckedChange={unwantedAlerts=it})
+    Text("Its notifications are unwanted",modifier=Modifier.weight(1f))
+   }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=batteryEvidence,onCheckedChange={batteryEvidence=it})
+    Text("Android battery screen confirms unusual background use",modifier=Modifier.weight(1f))
+   }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=unneeded,onCheckedChange={unneeded=it})
+    Text("I no longer need this app",modifier=Modifier.weight(1f))
+   }
+   if(valid) {
+    val recommendation=AppReviewPolicy.recommend(unneeded,unwantedAlerts,batteryEvidence,essential)
+    Text("Recommendation: ${recommendation.action.name.replace('_',' ')}",fontWeight=FontWeight.Bold,color=Cyan)
+    Text(recommendation.explanation,color=Muted)
+    Action("Open this app's Android information") {
+     try {
+      context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+packageName.trim())))
+     } catch (_:Exception) { launch(context,Settings.ACTION_APPLICATION_SETTINGS) }
+    }
+    if(recommendation.action==AppReviewAction.CONSIDER_UNINSTALL) {
+     Action("Request uninstall (Android confirmation required)") {
+      try { context.startActivity(Intent(Intent.ACTION_DELETE,Uri.parse("package:"+packageName.trim()))) }
+      catch (_:Exception) { launch(context,Settings.ACTION_APPLICATION_SETTINGS) }
+     }
+    }
+   } else Text("Enter a valid exact package ID to enable an app-specific review.",color=Muted)
+   if(context.packageName.endsWith(".advanced")) {
+    var activity by remember { mutableStateOf(ActivityMonitor.report(context)) }
+    Text("Advanced foreground usage (not running background processes or battery drain)",fontWeight=FontWeight.Bold)
+    if(!activity.usageAccessGranted) Text("Usage Access is optional and not granted.",color=Muted)
+    activity.recentApps.take(10).forEach { app ->
+     Text("${app.packageName}: ${app.foregroundMinutes} min foreground",color=Muted)
+     TextButton(onClick={packageName=app.packageName}) { Text("Review this app") }
+    }
+    Action("Refresh foreground activity") { activity=ActivityMonitor.report(context) }
+   } else Text("Standard edition intentionally has no Usage Access. You can still review an app by entering its package ID.",color=Muted)
+  }
+  if(section == "Sleep Review" || section == "Standby Intelligence") {
+   val context=LocalContext.current
+   val prefs=remember { context.getSharedPreferences("aimanage_sleep_review",Context.MODE_PRIVATE) }
+   var begin by remember { mutableStateOf(prefs.getLong("start_time",0L)) }
+   var result by remember { mutableStateOf("No overnight comparison yet.") }
+   Text("Overnight standby comparison",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+   Text("Before sleeping, tap Start. When you wake, tap Finish. The phone may still perform Android maintenance, sync, alarms or network tasks. This does not prove the screen was off throughout.",color=Muted)
+   Text("Baseline: ${if(begin>0L) java.text.DateFormat.getDateTimeInstance().format(java.util.Date(begin)) else "Not started"}",color=Muted)
+   Action("Start bedtime baseline") {
+    val b=DeviceReadings.battery(context)
+    begin=System.currentTimeMillis()
+    prefs.edit().putLong("start_time",begin).putInt("start_pct",b.percent ?: -1).putBoolean("start_charging",b.charging).apply()
+    result="Bedtime baseline saved locally. Leave normal notifications and alarms active."
+   }
+   if(begin>0L) {
+    Action("Finish and compare battery") {
+     val b=DeviceReadings.battery(context)
+     val s=SleepReading(begin,prefs.getInt("start_pct",-1).takeIf { it in 0..100 },prefs.getBoolean("start_charging",false))
+     val end=SleepReading(System.currentTimeMillis(),b.percent,b.charging)
+     val measured=SleepReviewPolicy.compare(s,end)
+     result=if(measured==null) "No valid comparison. At least one hour is required; charging, battery increase, invalid readings or clock changes invalidate the estimate."
+      else "Battery changed by ${measured.percentLost} percentage points over ${"%.1f".format(measured.hours)} h (${"%.2f".format(measured.percentPointsPerHour)} points/h). This is a before/after comparison, not verified screen-off drain or per-app attribution."
+     prefs.edit().clear().apply()
+     begin=0L
+    }
+   }
+   Text(result,color=Muted)
+   Action("Open Android battery usage details") { launch(context,Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+   Text("For overnight alerts and calls, keep essential apps unrestricted. Android Doze may defer background work; Xiaomi battery policies can add restrictions. Never disable safety or notification protections to save power.",color=Muted)
+  }
   if(section == "AI Assistant") {
    val context = LocalContext.current
    var question by remember { mutableStateOf("") }
@@ -236,7 +321,7 @@ private fun AimanageUI() {
    OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask AImanage")},modifier=Modifier.fillMaxWidth(),minLines=2)
    Action("Ask assistant") { reply=DeviceAssistant.reply(context,question) }
    Text("Quick questions",color=Muted,style=MaterialTheme.typography.labelMedium)
-   val quickQuestions=listOf("Save battery without slowing apps","Which apps should I close?","Private DNS block ads","Cooling and thermal","VPN","Network speed","Notification management")
+   val quickQuestions=listOf("Save battery without slowing apps","Which apps should I close?","What drains battery overnight?","Which notifications can I disable?","Should I uninstall an app?","Private DNS block ads","Cooling and thermal","Network speed")
    quickQuestions.forEach { prompt ->
     TextButton(onClick={ question=prompt; reply=DeviceAssistant.reply(context,prompt) }) { Text(prompt) }
    }
