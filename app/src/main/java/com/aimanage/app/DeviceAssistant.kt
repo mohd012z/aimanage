@@ -12,12 +12,30 @@ object DeviceAssistant {
  fun reply(context:Context, input:String):AssistantReply {
   val q=input.lowercase(Locale.ROOT).trim()
   if(q.isBlank()) return AssistantReply("Ask about battery, temperature, app activity, notification rules, or Android settings.")
+  if(listOf("dns","block ads","adblock","iklan").any { it in q })
+   return AssistantReply("Private DNS can block some advertising domains. In Android Settings, locate Private DNS, select provider hostname and enter a provider you trust (example: dns.adguard-dns.com). Verify normal browsing and app connectivity afterwards. DNS filters cannot block all in-app or video ads; some apps may break, and the provider receives DNS queries. AImanage cannot silently configure Private DNS.",Settings.ACTION_WIRELESS_SETTINGS)
+  if("vpn" in q)
+   return AssistantReply("AImanage has no active VPN service or firewall. A real VPN needs a separately implemented VpnService and Android consent. Review VPN connections through Android Settings; one active VPN is normally permitted per user profile.",Settings.ACTION_VPN_SETTINGS)
+  if(listOf("network","wifi","wi-fi","internet","latency","bandwidth","data speed").any { it in q })
+   return AssistantReply("Compare Wi-Fi and mobile data signal, router congestion and network conditions. DNS may affect resolution but cannot increase radio bandwidth. Ordinary apps cannot speed up the modem or throttle other apps at will.",Settings.ACTION_WIRELESS_SETTINGS)
+  if(listOf("save battery","saving battery","battery saver without","performance","optimize").any { it in q })
+   return AssistantReply("Balanced battery plan: retain normal performance for important foreground apps; lower unnecessary screen brightness and timeout first. In Android per-app Battery settings review only rarely used apps with confirmed background drain. Avoid restricting calls, alarms, navigation and messaging without checking delivery. Global Battery Saver may reduce performance and delay sync.",Settings.ACTION_BATTERY_SAVER_SETTINGS)
+  if(listOf("close app","which app","kill app","stop apps").any { it in q }) {
+   if(!context.packageName.endsWith(".advanced")) return AssistantReply("Standard edition has no Usage Access. Open Android battery usage settings and review apps with verified background consumption. Do not force-close apps solely for having long foreground use; never indiscriminately restrict important apps.",Settings.ACTION_APPLICATION_SETTINGS)
+   val r=ActivityMonitor.report(context)
+   val top=if(r.usageAccessGranted) r.recentApps.take(3).joinToString("; ") { it.packageName + ": " + it.foregroundMinutes + " min foreground" } else "Usage Access not granted"
+   return AssistantReply("Recent foreground time (NOT battery drain or CPU usage): $top. Check the Android per-app battery report before deciding whether to restrict anything. I cannot silently force-stop apps.",Settings.ACTION_APPLICATION_SETTINGS)
+  }
+  if(listOf("cooling","cool phone","reduce heat").any { it in q })
+   return AssistantReply("Check Android thermal status and reduce demanding workloads or charging if severe. Keep airflow unobstructed and avoid direct sun. AImanage cannot change the CPU governor or bypass thermal safeguards.")
+  if(listOf("refresh rate","brightness","display").any { it in q })
+   return AssistantReply("Lowering brightness and screen timeout can save battery without slowing app computation. A lower refresh rate can help but may reduce visual smoothness; use Android display controls.",Settings.ACTION_DISPLAY_SETTINGS)
   if(listOf("notification","notifikasi","alert").any { it in q }) {
-   if(listOf("enable automation","turn on automation","aktif automasi").any { it in q })
+   if(context.packageName.endsWith(".advanced") && listOf("enable automation","turn on automation","aktif automasi").any { it in q })
     return AssistantReply("I can enable the existing notification auto-dismiss rules. This only affects apps you explicitly allowlisted. Confirm below.",proposedRule=true)
    if(listOf("disable automation","turn off automation","matikan automasi").any { it in q })
     return AssistantReply("I can disable notification auto-dismiss automation. Confirm below.",proposedRule=false)
-   return AssistantReply("To read notifications, grant Notification Access. Automatic dismissal only works for user-selected packages and does not cover protected system notifications.",Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+   return if(context.packageName.endsWith(".advanced")) AssistantReply("The Advanced edition can use notification access only with explicit consent, for user-allowlisted auto-dismiss rules.",Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) else AssistantReply("Standard edition does not include notification reading or dismissal. Manage individual app notification categories in Android Settings.",Settings.ACTION_APPLICATION_SETTINGS)
   }
   if(listOf("temperature","thermal","hot","panas","cpu").any { it in q }) {
    val r=ActivityMonitor.report(context)
@@ -38,6 +56,7 @@ object DeviceAssistant {
   return AssistantReply("I can explain device diagnostics and open supported Android settings. Try: 'battery status', 'phone hot', 'background apps', or 'enable automation'.")
  }
  fun setNotificationAutomation(context:Context,enabled:Boolean) {
+  if(enabled && !context.packageName.endsWith(".advanced")) return
   context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).edit().putBoolean("automation_enabled",enabled).apply()
  }
  fun settingsIntent(action:String)=Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
