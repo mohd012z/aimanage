@@ -29,9 +29,10 @@ Use JDK 17, Android SDK 35, and Gradle 8.9 with Android Gradle Plugin 8.7.3. A G
 
 ```bash
 gradle :app:testDebugUnitTest
+gradle :app:lintDebug
 gradle :app:assembleDebug
 ```
 
-GitHub Actions runs the policy unit tests before the debug APK build and uploads the APK artifact after success. Passing these checks does **not** mean that notification behavior and OEM background policies have been verified on physical devices. Before distributing a release, manually verify permissions, notifications, clock changes, app upgrades, and real-device battery behavior.
+GitHub Actions runs policy unit tests and Android lint before the debug APK build and uploads the APK artifact after success. Passing these checks does **not** mean that notification behavior and OEM background policies have been verified on physical devices. Before distributing a release, manually verify permissions, notifications, clock changes, app upgrades, and real-device battery behavior.
 
 Version: 0.1.0 (experimental).
