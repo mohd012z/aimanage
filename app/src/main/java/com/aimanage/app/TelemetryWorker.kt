@@ -24,7 +24,12 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
   } catch (cancelled:CancellationException) {
    throw cancelled
   } catch (error:Exception) {
-   prefs.edit().putString("telemetry_last_error",error.javaClass.simpleName).apply()
+   prefs.edit().putString("telemetry_last_error",when(error) {
+    is SecurityException -> "Permission denied"
+    is java.io.IOException -> "Device I/O unavailable"
+    is IllegalStateException -> "Device state unavailable"
+    else -> "Telemetry sampling error"
+   }).apply()
    Result.retry()
   }
  }
