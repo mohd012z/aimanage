@@ -9,6 +9,19 @@ internal data class DischargeMeasurement(val percentPointsPerHour: Double, val d
 
 /** Uses only an uninterrupted discharging segment; never labels it screen-off drain. */
 internal object DeviceMeasurementPolicy {
+ private const val MAX_MEASUREMENT_AGE_MS = 3L * 60L * 60L * 1000L
+
+ /**
+  * A valid historical trend is not automatically a current trend.
+  * Reject future timestamps (clock changes) and samples older than 3 hours.
+  */
+ fun recentDischarge(points: List<DischargeSegmentPolicy.Point>, nowMillis: Long): DischargeMeasurement? {
+  val newest = points.lastOrNull() ?: return null
+  if (newest.timestamp > nowMillis || newest.timestamp < 0L) return null
+  if (nowMillis - newest.timestamp > MAX_MEASUREMENT_AGE_MS) return null
+  return discharge(points)
+ }
+
  fun discharge(points: List<DischargeSegmentPolicy.Point>): DischargeMeasurement? {
   val segment = DischargeSegmentPolicy.latest(points)
   if(segment.size < 2) return null
