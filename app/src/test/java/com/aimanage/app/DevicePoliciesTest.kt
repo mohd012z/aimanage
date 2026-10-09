@@ -103,6 +103,10 @@ class DevicePoliciesTest {
   assertTrue(HealthAlertPolicy.isElevatedTemperature("Normal",40f))
   assertFalse(HealthAlertPolicy.isElevatedTemperature("Normal",39.9f))
   assertFalse(HealthAlertPolicy.isElevatedTemperature("Normal",null))
+  assertFalse(HealthAlertPolicy.isElevatedTemperature("Normal",Float.NaN))
+  assertFalse(HealthAlertPolicy.isElevatedTemperature("Normal",Float.POSITIVE_INFINITY))
+  assertFalse(HealthAlertPolicy.isElevatedTemperature("Normal",Float.NEGATIVE_INFINITY))
+  assertTrue(HealthAlertPolicy.isElevatedTemperature("Severe",Float.NaN))
   assertFalse(HealthAlertPolicy.isElevatedTemperature("Light",35f))
  }
 }
