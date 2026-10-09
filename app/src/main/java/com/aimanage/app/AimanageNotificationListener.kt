@@ -27,7 +27,8 @@ class AimanageNotificationListener : NotificationListenerService() {
    clearable=sbn.isClearable,
    category=notification.category,
    hasFullScreenIntent=notification.fullScreenIntent != null,
-   secretVisibility=notification.visibility == Notification.VISIBILITY_SECRET
+   secretVisibility=notification.visibility == Notification.VISIBILITY_SECRET,
+   groupSummary=notification.flags and Notification.FLAG_GROUP_SUMMARY != 0
   )
   if(!permitted) return
   try { cancelNotification(sbn.key) } catch (_: SecurityException) { }
