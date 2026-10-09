@@ -81,9 +81,9 @@ class DevicePoliciesTest {
    enabled=true, lastSuccess=0L, enabledSince=500L, lastErrorAt=2_000L, now=1_000L))
  }
 
- @Test fun previousSessionFutureSampleIsNotMistakenForCurrentClockRollback() {
+ @Test fun oldSessionSampleDoesNotCountAsCurrentSample() {
   assertEquals("Awaiting first background sample", TelemetryHealthPolicy.status(
-   enabled=true, lastSuccess=300L, enabledSince=500L, lastErrorAt=0L, now=400L))
+   enabled=true, lastSuccess=300L, enabledSince=500L, lastErrorAt=0L, now=600L))
  }
 
  @Test fun alertCooldownBlocksRepeatedNotificationUntilTwoHours() {
