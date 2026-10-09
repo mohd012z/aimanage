@@ -1,6 +1,5 @@
 package com.aimanage.app
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -11,6 +10,8 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -206,7 +207,7 @@ private fun AimanageUI() {
      TextButton(onClick={packages=packages-p;prefs.edit().putStringSet("dismiss_packages",packages).apply()}) { Text("Remove") }
     }
    }
-   Text("Calls, alarms, reminders, system/security alerts and ongoing notifications are protected from auto-dismissal.",color=Muted)
+   Text("Calls, alarms, messages, calendar events, group summaries, system/security alerts and ongoing notifications are protected from auto-dismissal.",color=Muted)
    Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
   }
   if(section == "CPU & App Activity" || section == "Standby Intelligence") {
@@ -244,18 +245,30 @@ private fun AimanageUI() {
   if(section == "AI Learning") {
    val alertContext = LocalContext.current
    var healthAlerts by remember { mutableStateOf(DeviceAlertEngine.enabled(alertContext)) }
+   var alertPermissionMessage by remember { mutableStateOf("") }
+   val requestAlertPermission = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestPermission()
+   ) { granted ->
+    DeviceAlertEngine.setEnabled(alertContext, granted)
+    healthAlerts = granted
+    alertPermissionMessage = if(granted)
+     "Notification permission granted. Device health alerts enabled."
+    else "Notification permission denied. Device health alerts remain disabled."
+   }
    Row(verticalAlignment=Alignment.CenterVertically) {
     Text("Device health alerts",modifier=Modifier.weight(1f))
     Switch(checked=healthAlerts,onCheckedChange={requested ->
-     if(requested && android.os.Build.VERSION.SDK_INT >= 33 &&
+     if(requested && Build.VERSION.SDK_INT >= 33 &&
        alertContext.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-      (alertContext as? Activity)?.requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),9001)
+      requestAlertPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
      } else {
       DeviceAlertEngine.setEnabled(alertContext,requested)
       healthAlerts=requested
+      alertPermissionMessage = if(requested) "Device health alerts enabled." else "Device health alerts disabled."
      }
     })
    }
+   if(alertPermissionMessage.isNotBlank()) Text(alertPermissionMessage,color=Muted)
    Text("Alerts require notification permission and periodic sampling to be enabled. Android may delay checks.",color=Muted)
 
    val appContext = LocalContext.current
