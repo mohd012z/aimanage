@@ -18,6 +18,14 @@ class PerformanceVpnPolicyTest {
   assertTrue(PublicVpnCatalog.explanation(VpnAdviceMode.HYBRID,p).contains("does not activate"))
   assertTrue(PublicVpnCatalog.explanation(VpnAdviceMode.EXTERNAL,p).contains("cannot connect"))
  }
+ @Test fun freeVpnDropdownContainsDistinctProviders() {
+  val names=PublicVpnCatalog.providers.map { it.name }
+  assertTrue(names.contains("Proton VPN"))
+  assertTrue(names.contains("Cloudflare WARP"))
+  assertTrue(names.contains("Windscribe Free"))
+  assertEquals(names.size,names.distinct().size)
+  assertTrue(PublicVpnCatalog.providers.all { it.note.isNotBlank() })
+ }
  @Test fun everyVpnProviderUsesHttps() {
   assertTrue(PublicVpnCatalog.providers.all { it.homepage.startsWith("https://") })
  }
