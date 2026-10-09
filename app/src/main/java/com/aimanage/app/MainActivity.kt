@@ -365,7 +365,9 @@ private fun AimanageUI() {
      shape=RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth()) {
      Column(Modifier.padding(12.dp)) {
       Text(if(user) "You" else "AImanage",color=if(user) Cyan else Color.White,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.labelMedium)
-      Text(if(!user && !context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE).getBoolean("show_explanations",true)) message.take(190)+if(message.length>190) "…" else "" else message,color=Color.White)
+      val compact = !user && !context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE).getBoolean("show_explanations",true)
+      val displayed = if(compact && message.length>190) message.take(190)+"…" else message
+      Text(displayed,color=Color.White)
      }
     }
    }
@@ -584,7 +586,7 @@ private fun AimanageUI() {
     Switch(checked=descriptions,onCheckedChange={descriptions=it;prefs.edit().putBoolean("show_explanations",it).apply()})
    }
    Text("Preferences are stored only on this device; they do not change Android permissions or stop other apps.",color=Muted)
-   Action("Configure local AI Learning and alerts") { open(Settings.ACTION_APPLICATION_SETTINGS) }
+   Action("Review AImanage app permissions") { open(Settings.ACTION_APPLICATION_SETTINGS) }
    Action("Review battery settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
    Action("Manage Android notifications") { open(Settings.ACTION_APP_NOTIFICATION_SETTINGS) }
   }
