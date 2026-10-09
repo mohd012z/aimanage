@@ -28,8 +28,11 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
 object TelemetryScheduler {
  private const val NAME="aimanage_telemetry"
  fun setEnabled(context:Context,enabled:Boolean) {
-  context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
-   .edit().putBoolean("telemetry_enabled",enabled).apply()
+  val prefs=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
+  val wasEnabled=prefs.getBoolean("telemetry_enabled",false)
+  val edit=prefs.edit().putBoolean("telemetry_enabled",enabled)
+  if(enabled && !wasEnabled) edit.putLong("telemetry_enabled_since",System.currentTimeMillis())
+  edit.apply()
   val manager=WorkManager.getInstance(context)
   if(enabled) {
    val request=PeriodicWorkRequestBuilder<TelemetryWorker>(30,TimeUnit.MINUTES).build()
@@ -43,7 +46,8 @@ object TelemetryScheduler {
  fun health(context:Context,now:Long=System.currentTimeMillis()):String {
   if(!enabled(context)) return "Disabled"
   val last=lastSuccess(context)
-  if(last==0L) return "Awaiting first background sample"
+  val enabledSince=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_enabled_since",0L)
+  if(last==0L || last<enabledSince) return "Awaiting first background sample"
   val age=now-last
   return if(age<0L) "Device clock changed" else if(age>3*60*60*1000L) "Delayed: last sample over 3 hours ago" else "Recent sample recorded"
  }
