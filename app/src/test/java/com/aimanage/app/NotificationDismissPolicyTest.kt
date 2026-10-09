@@ -17,7 +17,8 @@ class NotificationDismissPolicyTest {
   clearable: Boolean = true,
   category: String? = "promo",
   fullScreen: Boolean = false,
-  secret: Boolean = false
+  secret: Boolean = false,
+  groupSummary: Boolean = false
  ) = NotificationDismissPolicy.canDismiss(
   automationEnabled=enabled,
   sourcePackage=source,
@@ -28,7 +29,8 @@ class NotificationDismissPolicyTest {
   clearable=clearable,
   category=category,
   hasFullScreenIntent=fullScreen,
-  secretVisibility=secret
+  secretVisibility=secret,
+  groupSummary=groupSummary
  )
 
  @Test fun explicitOptInAndExactPackageAllowlistRequired() {
@@ -49,7 +51,8 @@ class NotificationDismissPolicyTest {
 
  @Test fun criticalNotificationCategoriesAreAlwaysProtected() {
   for (category in listOf("call","alarm","sys","service","transport",
-   "reminder","err","missed_call","navigation","location_sharing")) {
+   "reminder","err","missed_call","navigation","location_sharing",
+   "msg","email","event")) {
    assertFalse("Category $category should be protected",mayDismiss(category=category))
   }
   assertTrue(mayDismiss(category=null))
@@ -65,6 +68,17 @@ class NotificationDismissPolicyTest {
  @Test fun fullScreenAndSecretNotificationsAreProtected() {
   assertFalse(mayDismiss(fullScreen=true))
   assertFalse(mayDismiss(secret=true))
+ }
+
+ @Test fun groupSummaryCannotBeDismissedEvenWhenAppIsAllowlisted() {
+  assertFalse(mayDismiss(groupSummary=true))
+  assertTrue(mayDismiss(groupSummary=false))
+ }
+
+ @Test fun personalCommunicationsAndCalendarEventsStayVisible() {
+  for (category in listOf("msg", "email", "event")) {
+   assertFalse("Protected category: $category", mayDismiss(category=category))
+  }
  }
 
  @Test fun unlistedAndProtectedCategoriesCannotBeOverriddenByAllowlist() {

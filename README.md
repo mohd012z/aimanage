@@ -15,7 +15,7 @@ Experimental native Android device diagnostics and opt-in automation for Android
 
 ## Notification safety
 
-Notification Access is sensitive. It must be granted manually in Android Settings. Notification auto-dismiss remains disabled unless the user enables it and explicitly adds exact package names in AImanage. The app excludes its own notifications, system/dialer/security packages, ongoing and non-clearable notifications, foreground-service notifications, full-screen notifications, secret-visibility notifications, and alarm/call/reminder/system/error/navigation categories. Do not add packages whose notifications you must retain. Disable automation immediately if unexpected dismissal occurs.
+Notification Access is sensitive. It must be granted manually in Android Settings. Notification auto-dismiss remains disabled unless the user enables it and explicitly adds exact package names in AImanage. The app excludes its own notifications, system/dialer/security packages, ongoing and non-clearable notifications, foreground-service notifications, full-screen notifications, secret-visibility notifications, group-summary notifications, and alarm/call/reminder/system/error/navigation/message/email/event categories. Do not add packages whose notifications you must retain. Disable automation immediately if unexpected dismissal occurs.
 
 ## Data and permission boundaries
 
