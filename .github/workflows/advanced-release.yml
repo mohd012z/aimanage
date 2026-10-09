@@ -1,0 +1,84 @@
+name: Advanced release candidate (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify signing secrets exist (no debug key fallback)
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.AIMANAGE_RELEASE_KEYSTORE_BASE64 }}
+          AIMANAGE_RELEASE_STORE_PASSWORD: ${{ secrets.AIMANAGE_RELEASE_STORE_PASSWORD }}
+          AIMANAGE_RELEASE_KEY_ALIAS: ${{ secrets.AIMANAGE_RELEASE_KEY_ALIAS }}
+          AIMANAGE_RELEASE_KEY_PASSWORD: ${{ secrets.AIMANAGE_RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$RELEASE_KEYSTORE_B64"
+          test -n "$AIMANAGE_RELEASE_STORE_PASSWORD"
+          test -n "$AIMANAGE_RELEASE_KEY_ALIAS"
+          test -n "$AIMANAGE_RELEASE_KEY_PASSWORD"
+          python3 - <<'PY'
+          import base64, os, pathlib
+          output = pathlib.Path(os.environ["RUNNER_TEMP"]) / "aimanage-release.keystore"
+          output.write_bytes(base64.b64decode(os.environ["RELEASE_KEYSTORE_B64"], validate=True))
+          output.chmod(0o600)
+          if output.stat().st_size < 100:
+              raise SystemExit("Signing keystore is suspiciously small")
+          PY
+      - name: Build signed Advanced release APK and Play submission bundle
+        env:
+          AIMANAGE_RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/aimanage-release.keystore
+          AIMANAGE_RELEASE_STORE_PASSWORD: ${{ secrets.AIMANAGE_RELEASE_STORE_PASSWORD }}
+          AIMANAGE_RELEASE_KEY_ALIAS: ${{ secrets.AIMANAGE_RELEASE_KEY_ALIAS }}
+          AIMANAGE_RELEASE_KEY_PASSWORD: ${{ secrets.AIMANAGE_RELEASE_KEY_PASSWORD }}
+        run: gradle --no-daemon --console=plain :app:assembleAdvancedRelease :app:bundleAdvancedRelease
+      - name: Check signatures and actual Advanced release privileges
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/advanced/release/app-advanced-release.apk"
+          AAB="app/build/outputs/bundle/advancedRelease/app-advanced-release.aab"
+          test -s "$APK"
+          test -s "$AAB"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          test -n "$APKSIGNER"
+          test -n "$AAPT"
+          "$APKSIGNER" verify --verbose "$APK"
+          jarsigner -verify -strict "$AAB" >/dev/null
+          "$AAPT" dump permissions "$APK" > release-permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > release-manifest.txt
+          grep -Fq 'android.permission.PACKAGE_USAGE_STATS' release-permissions.txt
+          grep -Fq 'android.service.notification.NotificationListenerService' release-manifest.txt
+          if grep -E 'android.permission.(READ_SMS|RECEIVE_SMS|SEND_SMS|READ_CALL_LOG|WRITE_CALL_LOG|READ_CONTACTS|RECORD_AUDIO|CAMERA|QUERY_ALL_PACKAGES)' release-permissions.txt; then
+            echo "RED: unapproved sensitive permission in release"
+            exit 1
+          fi
+          if grep -Fq "android.permission.INTERNET" release-permissions.txt; then
+            echo "RED: unexpected Internet permission"
+            exit 1
+          fi
+          echo "GREEN: signed Advanced release and manifest policy verified"
+          sha256sum "$APK" "$AAB"
+      - name: Upload candidate for developer review (NOT Play-approved)
+        uses: actions/upload-artifact@v4
+        with:
+          name: advanced-signed-review-candidate
+          path: |
+            app/build/outputs/apk/advanced/release/*.apk
+            app/build/outputs/bundle/advancedRelease/*.aab
+          retention-days: 3
+          if-no-files-found: error
+      - name: Remove release signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/aimanage-release.keystore"
