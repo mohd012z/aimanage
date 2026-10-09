@@ -33,7 +33,7 @@ private val Navy = Color(0xFF101A32)
 private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
-private val tabs = listOf("Home","Apps","Thermal","Network","Protect")
+private val tabs = listOf("Home","Apps","Thermal","Network","Protect","AI")
 private val sections = listOf("Overview","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
@@ -61,13 +61,13 @@ private fun AimanageUI() {
   PowerManager.THERMAL_STATUS_SHUTDOWN -> "Shutdown"
   else -> "Unavailable"
  } else "Unavailable"
- MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, background = Navy, surface = Panel, onSurface = Color.White)) {
-  Column(Modifier.fillMaxSize().background(Navy)) {
+ MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, onPrimary = Navy, background = Navy, onBackground = Color.White, surface = Panel, onSurface = Color.White, surfaceVariant = Panel, onSurfaceVariant = Muted)) {
+  Column(Modifier.fillMaxSize().background(Navy).statusBarsPadding()) {
    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories") }
+    IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories", tint=Color.White) }
     Column(Modifier.weight(1f)) { Text("AImanage", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold); Text("Android Device Intelligence", color = Muted, style = MaterialTheme.typography.labelSmall) }
     IconButton(onClick = { selected = "AI Assistant"; drawer = false }) { Icon(Icons.Default.Chat, "Open AI Advisor") }
-    IconButton(onClick = { selected = "Settings" }) { Icon(Icons.Default.Settings, "Settings") }
+    IconButton(onClick = { selected = "Settings" }) { Icon(Icons.Default.Settings, "Settings", tint=Color.White) }
    }
    Row(Modifier.weight(1f)) {
     if (drawer) {
@@ -80,7 +80,7 @@ private fun AimanageUI() {
      }
     }
     LazyColumn(Modifier.weight(1f).fillMaxHeight(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-     item { Text(selected, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+     item { Text(selected, color=Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
      if(selected == "Overview" || selected == "Home") {
       item { PanelCard("Device Health", "Live battery and thermal snapshot", Icons.Default.Favorite) {
        Text("Battery  ${pct?.let { "$it%" } ?: "Unavailable"}", style = MaterialTheme.typography.headlineMedium)
@@ -114,14 +114,14 @@ private fun AimanageUI() {
        Action("Device settings") { launch(context, Settings.ACTION_SETTINGS) }
       } }
      } else {
-      item { DetailSection(selected, pct, thermal) { action -> launch(context, action) } }
+      item { DetailSection(if(selected=="AI") "AI Assistant" else selected, pct, thermal) { action -> launch(context, action) } }
      }
     }
    }
    NavigationBar(containerColor = Panel) {
     tabs.forEach { tab ->
-     val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Thermal" -> Icons.Default.DeviceThermostat; "Network" -> Icons.Default.Wifi; else -> Icons.Default.Shield }
-     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview") || (tab == "Apps" && selected == "App Review"), onClick = { selected = if(tab == "Apps") "App Review" else tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
+     val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Thermal" -> Icons.Default.DeviceThermostat; "Network" -> Icons.Default.Wifi; "AI" -> Icons.Default.AutoAwesome; else -> Icons.Default.Shield }
+     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview") || (tab == "AI" && selected == "AI Assistant") || (tab == "Apps" && selected == "App Review"), onClick = { selected = if(tab == "Apps") "App Review" else tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
     }
    }
   }
