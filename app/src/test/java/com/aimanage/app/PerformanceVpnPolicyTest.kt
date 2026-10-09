@@ -26,6 +26,12 @@ class PerformanceVpnPolicyTest {
   assertEquals(names.size,names.distinct().size)
   assertTrue(PublicVpnCatalog.providers.all { it.note.isNotBlank() })
  }
+ @Test fun vpnProviderHandoffsAreExplicitAndUnique() {
+  val packages=PublicVpnCatalog.providers.mapNotNull { PublicVpnCatalog.packageName(it) }
+  assertEquals(PublicVpnCatalog.providers.size,packages.size)
+  assertEquals(packages.size,packages.distinct().size)
+  assertNull(PublicVpnCatalog.packageName(VpnProvider("Unknown","https://example.org","test")))
+ }
  @Test fun everyVpnProviderUsesHttps() {
   assertTrue(PublicVpnCatalog.providers.all { it.homepage.startsWith("https://") })
  }
