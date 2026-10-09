@@ -9,6 +9,14 @@ import java.util.concurrent.TimeUnit
  * clock is adjusted. These policies explicitly handle clock rollback; they do not
  * assume that a positive difference can always be computed.
  */
+/** Validate broadcasts before presenting or recording a battery percentage. */
+internal object BatteryPercentagePolicy {
+ fun fromLevelAndScale(level: Int, scale: Int): Int? {
+  if (level < 0 || scale <= 0 || level > scale) return null
+  return (level.toLong() * 100L / scale.toLong()).toInt()
+ }
+}
+
 internal object LearningSamplingPolicy {
  private val minimumIntervalMs = TimeUnit.MINUTES.toMillis(15)
 
