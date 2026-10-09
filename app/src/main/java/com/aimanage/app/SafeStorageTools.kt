@@ -60,7 +60,8 @@ object SafeStorageTools {
   val files=root.listFiles().filter { it.isFile }.take(100)
   for(file in files) {
    try {
-    val name=file.name ?: run { skipped++;continue }
+    val name=file.name
+    if(name==null) { skipped++;continue }
     if(file.length()>100L*1024L*1024L) { skipped++;continue }
     val category=FileCategoryPolicy.folder(name)
     val folder=root.findFile(category)?.takeIf { it.isDirectory } ?: root.createDirectory(category)
