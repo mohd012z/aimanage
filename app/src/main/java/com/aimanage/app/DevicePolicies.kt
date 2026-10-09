@@ -56,5 +56,5 @@ internal object HealthAlertPolicy {
 
  fun isElevatedTemperature(thermalStatus: String, batteryTemperatureC: Float?): Boolean =
   thermalStatus in setOf("Severe", "Critical", "Emergency", "Shutdown") ||
-   (batteryTemperatureC?.let { it >= 40f } ?: false)
+   (batteryTemperatureC?.let { it.isFinite() && it >= 40f } ?: false)
 }
