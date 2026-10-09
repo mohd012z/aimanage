@@ -17,6 +17,27 @@ internal object BatteryPercentagePolicy {
  }
 }
 
+/** Latest uninterrupted battery discharge segment; inputs are chronological. */
+internal object DischargeSegmentPolicy {
+ data class Point(val timestamp: Long, val percent: Int?, val charging: Boolean)
+ private val maxGapMs = TimeUnit.HOURS.toMillis(3)
+
+ fun latest(points: List<Point>): List<Point> {
+  val result = mutableListOf<Point>()
+  for (point in points.takeLast(24).asReversed()) {
+   val percent = point.percent
+   if (point.charging || percent == null || percent !in 0..100) break
+   val newer = result.lastOrNull()
+   if (newer != null) {
+    val gap = newer.timestamp - point.timestamp
+    if (gap <= 0L || gap > maxGapMs || newer.percent!! > percent) break
+   }
+   result.add(point)
+  }
+  return result.asReversed()
+ }
+}
+
 internal object LearningSamplingPolicy {
  private val minimumIntervalMs = TimeUnit.MINUTES.toMillis(15)
 
