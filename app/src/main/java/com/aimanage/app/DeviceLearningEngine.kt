@@ -69,18 +69,9 @@ object DeviceLearningEngine {
     "System thermal status: ${last.thermalStatus}.","Allow Android thermal safeguards to operate.")
   // Analyze only the latest uninterrupted discharge session. Filtering out charging
   // samples could otherwise connect unrelated periods and report a misleading rate.
-  val eligible=samples.takeLast(24).takeLastWhile { !it.charging && it.batteryPercent != null }
-  // A gap or rising battery percentage ends a discharge segment. Keep only
-  // the most recent continuous segment rather than rejecting its valid tail.
-  val latest=mutableListOf<DeviceLearningSample>()
-  for (sample in eligible.asReversed()) {
-   val newer=latest.lastOrNull()
-   if(newer != null && (newer.timestamp <= sample.timestamp ||
-      newer.timestamp-sample.timestamp > 3L*60L*60L*1000L ||
-      newer.batteryPercent!! > sample.batteryPercent!!)) break
-   latest.add(sample)
-  }
-  latest.reverse()
+  val latest=DischargeSegmentPolicy.latest(samples.map {
+   DischargeSegmentPolicy.Point(it.timestamp,it.batteryPercent,it.charging)
+  })
   if(latest.size>=2) {
    val first=latest.first(); val end=latest.last()
    val elapsed=(end.timestamp-first.timestamp)/3600000.0
