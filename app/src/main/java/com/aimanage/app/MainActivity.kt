@@ -345,6 +345,20 @@ private fun AimanageUI() {
    }
    Text("Learning is rule-based and on-device. Automatic sampling runs only when enabled; no model training or cloud upload.",color=Muted)
   }
+  if(section == "Network" || section == "Network & Speed") {
+   val context=LocalContext.current
+   var network by remember { mutableStateOf(NetworkDiagnostics.snapshot(context)) }
+   Text("Transport: ${network.transport}")
+   Text("Internet capability: ${if(network.internetCapability) "Reported" else "Not reported"}")
+   Text("Android validated: ${if(network.validated) "Yes" else "No"}")
+   Text("Captive portal: ${if(network.captivePortal) "Detected" else "Not detected"}")
+   Text("Metered: ${network.metered?.let { if(it) "Yes" else "No" } ?: "Unknown"}")
+   Text("VPN transport: ${if(network.vpnActive) "Reported" else "Not reported"}")
+   Text("Reported link capacity down/up: ${network.downstreamKbps?.toString() ?: "Unknown"} / ${network.upstreamKbps?.toString() ?: "Unknown"} kbps")
+   Text("These capacity estimates are not measured download or upload speeds.",color=Muted)
+   Text(NetworkAdvicePolicy.explain(network),color=Muted)
+   Action("Refresh network snapshot") { network=NetworkDiagnostics.snapshot(context) }
+  }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
    Text("Current display rate: ${DeviceReadings.refreshRate(context)?.let { "$it Hz" } ?: "Unavailable"}")
