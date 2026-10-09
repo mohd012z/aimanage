@@ -1,6 +1,7 @@
 package com.aimanage.app
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
