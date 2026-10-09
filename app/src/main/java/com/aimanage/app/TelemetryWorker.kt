@@ -34,7 +34,10 @@ object TelemetryScheduler {
   if(enabled) {
    val request=PeriodicWorkRequestBuilder<TelemetryWorker>(30,TimeUnit.MINUTES).build()
    manager.enqueueUniquePeriodicWork(NAME,ExistingPeriodicWorkPolicy.KEEP,request)
-  } else manager.cancelUniqueWork(NAME)
+  } else {
+   manager.cancelUniqueWork(NAME)
+   context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).edit().remove("telemetry_last_error").apply()
+  }
  }
  /** A delayed sample is not necessarily a failure: Doze and OEM policies defer work. */
  fun health(context:Context,now:Long=System.currentTimeMillis()):String {
