@@ -36,6 +36,14 @@ object TelemetryScheduler {
    manager.enqueueUniquePeriodicWork(NAME,ExistingPeriodicWorkPolicy.KEEP,request)
   } else manager.cancelUniqueWork(NAME)
  }
+ /** A delayed sample is not necessarily a failure: Doze and OEM policies defer work. */
+ fun health(context:Context,now:Long=System.currentTimeMillis()):String {
+  if(!enabled(context)) return "Disabled"
+  val last=lastSuccess(context)
+  if(last==0L) return "Awaiting first background sample"
+  val age=now-last
+  return if(age<0L) "Device clock changed" else if(age>3*60*60*1000L) "Delayed: last sample over 3 hours ago" else "Recent sample recorded"
+ }
  fun lastSuccess(context:Context):Long=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_last_success",0L)
  fun lastError(context:Context):String?=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getString("telemetry_last_error",null)
  fun enabled(context:Context)=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
