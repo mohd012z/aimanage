@@ -62,7 +62,7 @@ private fun AimanageUI() {
   else -> "Unavailable"
  } else "Unavailable"
  MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, onPrimary = Navy, background = Navy, onBackground = Color.White, surface = Panel, onSurface = Color.White, surfaceVariant = Panel, onSurfaceVariant = Muted, outline = Muted)) {
-  Column(Modifier.fillMaxSize().background(Navy)) {
+  Column(Modifier.fillMaxSize().background(Navy).statusBarsPadding()) {
    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
     IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories",tint=Color.White) }
     Column(Modifier.weight(1f)) { Text("AImanage",color=Color.White,style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold); Text("Android Device Intelligence", color = Muted, style = MaterialTheme.typography.labelSmall) }
@@ -121,7 +121,7 @@ private fun AimanageUI() {
    NavigationBar(containerColor = Panel) {
     tabs.forEach { tab ->
      val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Network" -> Icons.Default.Wifi; "AI" -> Icons.Default.SmartToy; else -> Icons.Default.Shield }
-     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview") || (tab == "Apps" && selected == "App Review"), onClick = { selected = if(tab == "Apps") "App Review" else tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
+     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview") || (tab == "Apps" && selected == "App Review") || (tab == "AI" && selected == "AI Assistant"), onClick = { selected = if(tab == "Apps") "App Review" else tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
     }
    }
   }
