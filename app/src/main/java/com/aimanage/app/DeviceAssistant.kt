@@ -12,6 +12,12 @@ object DeviceAssistant {
  fun reply(context:Context, input:String):AssistantReply {
   val q=input.lowercase(Locale.ROOT).trim()
   if(q.isBlank()) return AssistantReply("Ask about battery, temperature, app activity, notification rules, or Android settings.")
+  if(listOf("overnight","sleep","sleeping","bedtime","idle drain").any { it in q })
+   return AssistantReply("Open Sleep Review from the navigation menu. Capture a baseline before bed and compare in the morning. Android may use Doze, defer sync and wake for calls or alarms. A before/after reading does not prove the phone stayed idle or identify an app. Review Android battery usage for per-app evidence.",Settings.ACTION_BATTERY_SAVER_SETTINGS)
+  if(listOf("uninstall","delete app","remove app").any { it in q })
+   return AssistantReply("Open App Review to select an exact package and confirm that you no longer need it. AImanage will never uninstall automatically. Use Android's confirmation screen, and preserve accounts and app data before removal.",Settings.ACTION_APPLICATION_SETTINGS)
+  if(listOf("disable notification","mute notification","notification spam").any { it in q })
+   return AssistantReply("Use App Review to flag unwanted notification categories. Keep calls, messaging, alarms, navigation and work alerts enabled. Android App Info allows category-level changes; AImanage cannot silently switch other apps' notifications.",Settings.ACTION_APPLICATION_SETTINGS)
   if(listOf("dns","block ads","adblock","iklan").any { it in q })
    return AssistantReply("Private DNS can block some advertising domains. In Android Settings, locate Private DNS, select provider hostname and enter a provider you trust (example: dns.adguard-dns.com). Verify normal browsing and app connectivity afterwards. DNS filters cannot block all in-app or video ads; some apps may break, and the provider receives DNS queries. AImanage cannot silently configure Private DNS.",Settings.ACTION_WIRELESS_SETTINGS)
   if("vpn" in q)
