@@ -94,6 +94,10 @@ private fun AimanageUI() {
        Box(Modifier.weight(1f)) { SmallCard("Firewall","Planned", Icons.Default.Security) { selected = "Firewall" } }
        Box(Modifier.weight(1f)) { SmallCard("VPN","Planned", Icons.Default.VpnLock) { selected = "VPN" } }
       } }
+      item { PanelCard("AI Device Advisor","App review, bedtime battery test and network guidance",Icons.Default.SmartToy) {
+       Action("Open AI Assistant") { selected="AI" }
+       Action("Overnight sleep check") { selected="Sleep Check" }
+      } }
       item { PanelCard("Quick Actions","Android-owned controls",Icons.Default.Tune) {
        Action("Battery settings") { launch(context, Settings.ACTION_BATTERY_SAVER_SETTINGS) }
        Action("Application settings") { launch(context, Settings.ACTION_APPLICATION_SETTINGS) }
@@ -205,7 +209,7 @@ private fun AimanageUI() {
    Text(outcome,color=Muted)
    Text("While sleeping, Android may use Doze/App Standby to defer background jobs and network access, while permitted calls, alarms and priority alerts can still wake the device. Charging, Wi-Fi/cellular signal and notifications can affect observed use.",color=Muted)
   }
-  if(section == "Battery" || section == "Battery Care" || section == "Standby Intelligence") {
+  if(section == "Battery" || section == "Battery Care") {
    val context = LocalContext.current
    var b by remember(section) { mutableStateOf(DeviceReadings.battery(context)) }
    Text("Charge: ${b.percent?.let { "$it%" } ?: "Unavailable"}")
@@ -280,7 +284,7 @@ private fun AimanageUI() {
    Text("Per-app CPU measurement and service termination are not available to ordinary Android apps.",color=Muted)
    }
   }
-  if(section == "CPU & App Activity" || section == "Standby Intelligence") {
+  if(section == "CPU & App Activity") {
    val context = LocalContext.current
    var report by remember { mutableStateOf(ActivityMonitor.report(context)) }
    Text("Thermal pressure: ${report.thermalStatus}")
@@ -302,7 +306,7 @@ private fun AimanageUI() {
    OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask AImanage")},modifier=Modifier.fillMaxWidth(),minLines=2)
    Action("Ask assistant") { reply=DeviceAssistant.reply(context,question) }
    Text("Quick questions",color=Muted,style=MaterialTheme.typography.labelMedium)
-   val quickQuestions=listOf("Save battery without slowing apps","Which apps should I close?","Private DNS block ads","Cooling and thermal","VPN","Network speed","Notification management")
+   val quickQuestions=listOf("Which apps should I close?","Which apps can I uninstall?","Mute unneeded notifications","Phone hot: which apps?","Sleeping standby drain","Save battery without slowing apps","Private DNS block ads","Network speed")
    quickQuestions.forEach { prompt ->
     TextButton(onClick={ question=prompt; reply=DeviceAssistant.reply(context,prompt) }) { Text(prompt) }
    }
