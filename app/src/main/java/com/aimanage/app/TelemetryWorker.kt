@@ -59,6 +59,7 @@ object TelemetryScheduler {
   val last=lastSuccess(context)
   val enabledSince=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_enabled_since",0L)
   val errorAt=lastErrorAt(context)
+  if((last>now && last>=enabledSince) || (errorAt>now && errorAt>=enabledSince)) return "Device clock changed"
   if(errorAt>0L && errorAt>=enabledSince && (last==0L || errorAt>last)) return "Worker error: retry scheduled"
   if(last==0L || last<enabledSince) return "Awaiting first background sample"
   val age=now-last
