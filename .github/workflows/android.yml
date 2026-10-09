@@ -24,6 +24,9 @@ jobs:
       - name: Run device policy unit tests
         run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:testDebugUnitTest 2>&1 | tee unit-test.log
         shell: bash
+      - name: Run Android lint
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:lintDebug 2>&1 | tee lint.log
+        shell: bash
       - name: Build debug APK
         run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleDebug 2>&1 | tee build.log
         shell: bash
@@ -35,6 +38,7 @@ jobs:
           path: |
             build.log
             unit-test.log
+            lint.log
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: success()
