@@ -33,9 +33,7 @@ object DeviceLearningEngine {
   val prefs=context.getSharedPreferences("device_learning",Context.MODE_PRIVATE)
   val history=load(context).toMutableList()
   // Keep only one sample every 15 minutes; no permanent background service.
-  // A clock rollback must not suppress all future samples until wall time catches up.
-  val lastTimestamp=history.lastOrNull()?.timestamp
-  if(lastTimestamp!=null && sample.timestamp>=lastTimestamp && sample.timestamp-lastTimestamp < 15*60*1000L) return history.size
+  if(!LearningSamplingPolicy.shouldRecord(history.lastOrNull()?.timestamp,sample.timestamp)) return history.size
   history.add(sample)
   val arr=JSONArray()
   history.takeLast(MAX_SAMPLES).forEach {

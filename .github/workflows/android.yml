@@ -21,6 +21,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Run device policy unit tests
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:testDebugUnitTest 2>&1 | tee unit-test.log
+        shell: bash
       - name: Build debug APK
         run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleDebug 2>&1 | tee build.log
         shell: bash
@@ -29,7 +32,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-build-log
-          path: build.log
+          path: |
+            build.log
+            unit-test.log
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: success()
