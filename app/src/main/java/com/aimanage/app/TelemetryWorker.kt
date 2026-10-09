@@ -1,6 +1,7 @@
 package com.aimanage.app
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -19,6 +20,8 @@ class TelemetryWorker(context:Context, params:WorkerParameters):CoroutineWorker(
    DeviceAlertEngine.check(applicationContext,sample)
    prefs.edit().putLong("telemetry_last_success",System.currentTimeMillis()).remove("telemetry_last_error").apply()
    Result.success()
+  } catch (cancelled:CancellationException) {
+   throw cancelled
   } catch (error:Exception) {
    prefs.edit().putString("telemetry_last_error",error.javaClass.simpleName).apply()
    Result.retry()
