@@ -2,6 +2,7 @@ package com.aimanage.app
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
+import androidx.work.BackoffPolicy
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -38,7 +39,9 @@ object TelemetryScheduler {
   edit.apply()
   val manager=WorkManager.getInstance(context)
   if(enabled) {
-   val request=PeriodicWorkRequestBuilder<TelemetryWorker>(30,TimeUnit.MINUTES).build()
+   val request=PeriodicWorkRequestBuilder<TelemetryWorker>(30,TimeUnit.MINUTES)
+    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS)
+    .build()
    manager.enqueueUniquePeriodicWork(NAME,ExistingPeriodicWorkPolicy.KEEP,request)
   } else {
    manager.cancelUniqueWork(NAME)
