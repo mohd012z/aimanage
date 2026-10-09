@@ -270,13 +270,15 @@ private fun AimanageUI() {
    val enabledSince=remember(monitoringRefresh,sampling) { appContext.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_enabled_since",0L) }
    val workerError=remember(monitoringRefresh,sampling) { TelemetryScheduler.lastError(appContext) }
    Text("Background monitoring: $monitoringStatus",color=Muted)
-   Action("Refresh monitoring status") { monitoringRefresh++ }
+   Action("Refresh monitoring status") { monitoringRefresh++; samplesRefresh++ }
    val currentRun=lastRun>0L && lastRun>=enabledSince
    Text("Last successful background sample: ${if(lastRun==0L) "Not recorded" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(lastRun))}${if(sampling && !currentRun && lastRun>0L) " (previous monitoring session)" else ""}",color=Muted)
    workerError?.let { Text("Last worker error category: $it",color=Muted) }
 
    val context = LocalContext.current
+   var samplesRefresh by remember { mutableIntStateOf(0) }
    var samples by remember { mutableStateOf(DeviceLearningEngine.load(context)) }
+   LaunchedEffect(samplesRefresh) { samples=DeviceLearningEngine.load(context) }
    Text("Local learning samples: ${samples.size}")
    var captureMessage by remember { mutableStateOf("") }
    Action("Capture device snapshot") {
