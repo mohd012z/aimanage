@@ -6,6 +6,7 @@ android { namespace = "com.aimanage.app"; compileSdk = 35
  kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
+ testImplementation("junit:junit:4.13.2")
  implementation("androidx.work:work-runtime-ktx:2.10.1")
  implementation(platform("androidx.compose:compose-bom:2024.12.01"))
  implementation("androidx.activity:activity-compose:1.9.3")
