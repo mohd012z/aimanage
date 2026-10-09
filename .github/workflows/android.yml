@@ -30,6 +30,14 @@ jobs:
       - name: Build debug APK
         run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleStandardDebug :app:assembleAdvancedDebug 2>&1 | tee build.log
         shell: bash
+      - name: Audit compiled APK permissions (fail closed)
+        run: |
+          python3 scripts/check_apk_permissions.py
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -n "$APKSIGNER"
+          for apk in app/build/outputs/apk/*/debug/*.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$apk"
+          done
       - name: Upload failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
