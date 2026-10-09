@@ -66,6 +66,7 @@ private fun AimanageUI() {
    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
     IconButton(onClick = { drawer = !drawer }) { Icon(Icons.Default.Menu, "Toggle categories") }
     Column(Modifier.weight(1f)) { Text("AImanage", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold); Text("Android Device Intelligence", color = Muted, style = MaterialTheme.typography.labelSmall) }
+    IconButton(onClick = { selected = "AI Assistant"; drawer = false }) { Icon(Icons.Default.Chat, "Open AI Advisor") }
     IconButton(onClick = { selected = "Settings" }) { Icon(Icons.Default.Settings, "Settings") }
    }
    Row(Modifier.weight(1f)) {
@@ -95,6 +96,18 @@ private fun AimanageUI() {
        Box(Modifier.weight(1f)) { SmallCard("Firewall","Planned", Icons.Default.Security) { selected = "Firewall" } }
        Box(Modifier.weight(1f)) { SmallCard("VPN","Planned", Icons.Default.VpnLock) { selected = "VPN" } }
       } }
+      item { PanelCard("AI Phone Advisor","Recommendations • App health • Overnight standby",Icons.Default.Chat) {
+       Text("Review apps without disrupting important notifications, compare overnight battery loss, or ask the offline assistant.",color=Muted)
+       Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) { SmallCard("AI Advisor","Ask",Icons.Default.Chat) { selected="AI Assistant" } }
+        Box(Modifier.weight(1f)) { SmallCard("App Review","Assess",Icons.Default.Apps) { selected="App Review" } }
+       }
+       Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) { SmallCard("Sleep Review","Compare",Icons.Default.Bedtime) { selected="Sleep Review" } }
+        Box(Modifier.weight(1f)) { SmallCard("AI Learning","Profiles",Icons.Default.Insights) { selected="AI Learning" } }
+       }
+       Text("No automatic force-stop, uninstall, hardware cooling, or network speed boosting.",color=Muted,style=MaterialTheme.typography.bodySmall)
+      } }
       item { PanelCard("Quick Actions","Android-owned controls",Icons.Default.Tune) {
        Action("Battery settings") { launch(context, Settings.ACTION_BATTERY_SAVER_SETTINGS) }
        Action("Application settings") { launch(context, Settings.ACTION_APPLICATION_SETTINGS) }
@@ -108,7 +121,7 @@ private fun AimanageUI() {
    NavigationBar(containerColor = Panel) {
     tabs.forEach { tab ->
      val icon = when(tab) { "Home" -> Icons.Default.Home; "Apps" -> Icons.Default.Apps; "Thermal" -> Icons.Default.DeviceThermostat; "Network" -> Icons.Default.Wifi; else -> Icons.Default.Shield }
-     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview"), onClick = { selected = tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
+     NavigationBarItem(selected = selected == tab || (tab == "Home" && selected == "Overview") || (tab == "Apps" && selected == "App Review"), onClick = { selected = if(tab == "Apps") "App Review" else tab; drawer = false }, icon = { Icon(icon, tab) }, label = { Text(tab) })
     }
    }
   }
