@@ -22,13 +22,13 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Run device policy unit tests
-        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:testDebugUnitTest 2>&1 | tee unit-test.log
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:testStandardDebugUnitTest :app:testAdvancedDebugUnitTest 2>&1 | tee unit-test.log
         shell: bash
       - name: Run Android lint
-        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:lintDebug 2>&1 | tee lint.log
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:lintStandardDebug :app:lintAdvancedDebug 2>&1 | tee lint.log
         shell: bash
       - name: Build debug APK
-        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleDebug 2>&1 | tee build.log
+        run: set -o pipefail; gradle --no-daemon --stacktrace --console=plain :app:assembleStandardDebug :app:assembleAdvancedDebug 2>&1 | tee build.log
         shell: bash
       - name: Upload failure diagnostics
         if: failure()
@@ -43,6 +43,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: aimanage-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: aimanage-standard-and-advanced-debug-apks
+          path: app/build/outputs/apk/*/debug/*.apk
           retention-days: 7
