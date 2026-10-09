@@ -293,7 +293,8 @@ private fun AimanageUI() {
    }
    Action("Delete local learning history") {
     DeviceLearningEngine.clear(context)
-    samples=emptyList()
+    samples=DeviceLearningEngine.load(context)
+    captureMessage=if(samples.isEmpty()) "Local learning history cleared." else "Some learning samples remain; please retry."
    }
    Text("Learning is rule-based and on-device. Automatic sampling runs only when enabled; no model training or cloud upload.",color=Muted)
   }
