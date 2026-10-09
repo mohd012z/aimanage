@@ -34,7 +34,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Network","Protect","AI")
-private val sections = listOf("Overview","Performance","RAM","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","Cleaner & Files","Performance","RAM","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -108,6 +108,17 @@ private fun AimanageUI() {
        }
        Text("No automatic force-stop, uninstall, hardware cooling, or network speed boosting.",color=Muted,style=MaterialTheme.typography.bodySmall)
       } }
+      item { PanelCard("Storage & Device Care","Manage only what Android allows",Icons.Default.CleaningServices) {
+       Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) { SmallCard("Cleaner","Own cache",Icons.Default.DeleteSweep) { selected="Cleaner & Files" } }
+        Box(Modifier.weight(1f)) { SmallCard("Files","Organize",Icons.Default.FolderCopy) { selected="Cleaner & Files" } }
+       }
+       Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) { SmallCard("Battery","Review",Icons.Default.BatteryStd) { selected="Battery Care" } }
+        Box(Modifier.weight(1f)) { SmallCard("App Review","Evidence",Icons.Default.Apps) { selected="App Review" } }
+       }
+       Text("Cache cleanup affects AImanage only; selected folder copies require your approval. Android's own Xiaomi Security tools have deeper system privileges.",color=Muted)
+      } }
       item { PanelCard("Quick Actions","Android-owned controls",Icons.Default.Tune) {
        Action("Battery settings") { launch(context, Settings.ACTION_BATTERY_SAVER_SETTINGS) }
        Action("Application settings") { launch(context, Settings.ACTION_APPLICATION_SETTINGS) }
@@ -153,6 +164,59 @@ private fun AimanageUI() {
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
+  if(section == "Cleaner & Files") {
+   val ctx=LocalContext.current
+   var cacheSize by remember { mutableStateOf(SafeStorageTools.cacheBytes(ctx)) }
+   var cacheConfirm by remember { mutableStateOf(false) }
+   var folderUri by remember { mutableStateOf<Uri?>(null) }
+   var overview by remember { mutableStateOf<StorageOverview?>(null) }
+   var organizeConfirm by remember { mutableStateOf(false) }
+   var result by remember { mutableStateOf("") }
+   val selectFolder=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+    folderUri=uri
+    if(uri!=null) {
+     try { ctx.contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+     catch (_:SecurityException) {}
+     overview=try { SafeStorageTools.preview(ctx,uri) } catch (_:Exception) { null }
+    }
+    result=if(uri==null) "Folder selection cancelled." else "Selected-folder preview ready."
+   }
+   Text("Private cache",color=Cyan,fontWeight=FontWeight.Bold)
+   Text("AImanage cache: ${cacheSize / 1024L} KiB. Android normally manages other apps' caches; they cannot be cleared silently.",color=Muted)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=cacheConfirm,onCheckedChange={cacheConfirm=it})
+    Text("Confirm clearing AImanage temporary files")
+   }
+   Action("Clear AImanage cache") {
+    if(cacheConfirm) {
+     val removed=SafeStorageTools.clearOwnCache(ctx)
+     cacheSize=SafeStorageTools.cacheBytes(ctx)
+     result="Deleted $removed items from AImanage cache only."
+     cacheConfirm=false
+    } else result="Confirm the cache option first."
+   }
+   Text("Folder organizer",color=Cyan,fontWeight=FontWeight.Bold)
+   Text("Select a folder using Android's Storage Access Framework; no all-files permission is required.",color=Muted)
+   Action("Select folder to review") { selectFolder.launch(null) }
+   overview?.let {
+    Text("Selected folder: ${it.files} top-level files, ${it.folders} folders (up to 200 entries previewed).",color=Muted)
+    Text("Copies at most 100 files of up to 100 MB each into Images / Videos / Audio / Documents / Archives / APK_Installers / Other. Original files are kept, so storage usage can increase.",color=Muted)
+    Row(verticalAlignment=Alignment.CenterVertically) {
+     Checkbox(checked=organizeConfirm,onCheckedChange={organizeConfirm=it})
+     Text("Confirm copies into category folders")
+    }
+    Action("Copy selected files into categories") {
+     if(organizeConfirm && folderUri!=null) {
+      result=SafeStorageTools.copyToCategoryFolders(ctx,folderUri!!)
+      .message
+      organizeConfirm=false
+      overview=SafeStorageTools.preview(ctx,folderUri!!)
+     } else result="Select a folder and confirm before copying."
+    }
+   }
+   if(result.isNotEmpty()) Text(result,color=Cyan)
+   Action("Open Android storage settings") { open(Settings.ACTION_INTERNAL_STORAGE_SETTINGS) }
+  }
   if(section == "Protect") {
    Text("Security and privacy advisor",color=Cyan,fontWeight=FontWeight.Bold)
    Text("Keep important notifications active. Review unwanted categories instead of muting all alerts.",color=Muted)
