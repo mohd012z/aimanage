@@ -20,8 +20,14 @@ object DeviceAssistant {
    return AssistantReply("Use App Review to flag unwanted notification categories. Keep calls, messaging, alarms, navigation and work alerts enabled. Android App Info allows category-level changes; AImanage cannot silently switch other apps' notifications.",Settings.ACTION_APPLICATION_SETTINGS)
   if(listOf("dns","block ads","adblock","iklan").any { it in q })
    return AssistantReply("Private DNS can block some advertising domains. In Android Settings, locate Private DNS, select provider hostname and enter a provider you trust (example: dns.adguard-dns.com). Verify normal browsing and app connectivity afterwards. DNS filters cannot block all in-app or video ads; some apps may break, and the provider receives DNS queries. AImanage cannot silently configure Private DNS.",Settings.ACTION_WIRELESS_SETTINGS)
+  if(listOf("cpu","ram","memory","speed up phone","speed up","processor","slow phone","hang phone").any { it in q }) {
+   val metric=PerformanceDiagnostics.snapshot(context)
+   val status=ActivityMonitor.report(context).thermalStatus
+   val ram=PerformanceAdvicePolicy.ramPercent(metric)?.let { "$it%" } ?: "unknown"
+   return AssistantReply("Read-only CPU/RAM: ${metric.cores} CPU cores reported, RAM in use approx. $ram, Android low-memory=${metric.lowMemory}; AImanage CPU runtime=${metric.appCpuTimeMillis} ms (cumulative). ${PerformanceAdvicePolicy.assess(metric,status)} No other app's CPU or background process can be stopped silently.",Settings.ACTION_APPLICATION_SETTINGS)
+  }
   if("vpn" in q)
-   return AssistantReply("AImanage has no active VPN service or firewall. A real VPN needs a separately implemented VpnService and Android consent. Review VPN connections through Android Settings; one active VPN is normally permitted per user profile.",Settings.ACTION_VPN_SETTINGS)
+   return AssistantReply("Open VPN from the AImanage menu. Choose Off, Hybrid advisory, or External VPN advisory, then a listed provider. This only changes guidance: the VPN app handles connection and Android consent. Cloudflare WARP also offers DNS-only mode; VPN is not guaranteed to increase speed.",Settings.ACTION_VPN_SETTINGS)
   if(listOf("network","wifi","wi-fi","internet","latency","bandwidth","data speed").any { it in q })
    return AssistantReply("Compare Wi-Fi and mobile data signal, router congestion and network conditions. DNS may affect resolution but cannot increase radio bandwidth. Ordinary apps cannot speed up the modem or throttle other apps at will.",Settings.ACTION_WIRELESS_SETTINGS)
   if(listOf("save battery","saving battery","battery saver without","performance","optimize").any { it in q })

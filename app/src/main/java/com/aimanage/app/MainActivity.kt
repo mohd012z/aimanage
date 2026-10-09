@@ -34,7 +34,7 @@ private val Cyan = Color(0xFF00B8D9)
 private val Panel = Color(0xFF192640)
 private val Muted = Color(0xFFA9B8CE)
 private val tabs = listOf("Home","Apps","Network","Protect","AI")
-private val sections = listOf("Overview","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
+private val sections = listOf("Overview","Performance","RAM","App Management","App Review","Sleep Review","Background & Autostart","CPU & Thermal","Battery","Battery Care","Charging Intelligence","Brightness & Power","AI Assistant","AI Learning","Security Intelligence","Web Scam Check","Telegram Safety","Notification Center","Automation Control","CPU & App Activity","Caller Intelligence","Voice Caller","Standby Intelligence","Display & Refresh Rate","Network & Speed","Ad Blocker","Firewall","VPN","Permissions","Device Information","Settings")
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { AimanageUI() } }
@@ -471,6 +471,60 @@ private fun AimanageUI() {
    Text("These capacity estimates are not measured download or upload speeds.",color=Muted)
    Text(NetworkAdvicePolicy.explain(network),color=Muted)
    Action("Refresh network snapshot") { network=NetworkDiagnostics.snapshot(context) }
+  }
+  if(section == "CPU & Thermal" || section == "CPU & App Activity" || section == "Performance" || section == "RAM") {
+   val context=LocalContext.current
+   var performance by remember { mutableStateOf(PerformanceDiagnostics.snapshot(context)) }
+   Text("Performance & RAM diagnostics",color=Cyan,fontWeight=FontWeight.Bold)
+   Text("CPU cores available to AImanage: ${performance.cores}")
+   Text("This app CPU runtime since process start: ${performance.appCpuTimeMillis} ms",color=Muted)
+   Text("This is cumulative CPU time for AImanage only, not whole-device CPU % or another app's process usage.",color=Muted)
+   Text("RAM used (system estimate): ${PerformanceAdvicePolicy.ramPercent(performance)?.let { "$it%" } ?: "Unavailable"}")
+   Text("RAM available: ${performance.availableRamBytes / 1048576L} MiB / ${performance.totalRamBytes / 1048576L} MiB",color=Muted)
+   Text("Android low-memory signal: ${if(performance.lowMemory) "Yes" else "No"}")
+   Text(PerformanceAdvicePolicy.assess(performance,thermal),color=Muted)
+   Action("Refresh CPU & RAM") { performance=PerformanceDiagnostics.snapshot(context) }
+  }
+  if(section == "VPN" || section == "Protect") {
+   val context=LocalContext.current
+   val prefs=remember { context.getSharedPreferences("aimanage_vpn_advice",Context.MODE_PRIVATE) }
+   var mode by remember { mutableStateOf(VpnAdviceMode.values().firstOrNull { it.name==prefs.getString("mode","OFF") } ?: VpnAdviceMode.OFF) }
+   var providerIndex by remember { mutableIntStateOf(prefs.getInt("provider",0).coerceIn(0,PublicVpnCatalog.providers.lastIndex)) }
+   var modeExpanded by remember { mutableStateOf(false) }
+   var providerExpanded by remember { mutableStateOf(false) }
+   val provider=PublicVpnCatalog.providers[providerIndex]
+   Text("External VPN advisor",color=Cyan,fontWeight=FontWeight.Bold)
+   Text("Advice preference — does NOT control an external VPN connection.",color=Muted)
+   Box {
+    OutlinedButton(onClick={modeExpanded=true},modifier=Modifier.fillMaxWidth()) { Text("Mode: ${mode.name.replace('_',' ')}") }
+    DropdownMenu(expanded=modeExpanded,onDismissRequest={modeExpanded=false}) {
+     VpnAdviceMode.values().forEach { item ->
+      DropdownMenuItem(text={Text(item.name.replace('_',' '))},onClick={
+       mode=item;modeExpanded=false;prefs.edit().putString("mode",item.name).apply()
+      })
+     }
+    }
+   }
+   Box {
+    OutlinedButton(onClick={providerExpanded=true},modifier=Modifier.fillMaxWidth()) { Text("Provider: ${provider.name}") }
+    DropdownMenu(expanded=providerExpanded,onDismissRequest={providerExpanded=false}) {
+     PublicVpnCatalog.providers.forEachIndexed { index,item ->
+      DropdownMenuItem(text={Text(item.name)},onClick={
+       providerIndex=index;providerExpanded=false;prefs.edit().putInt("provider",index).apply()
+      })
+     }
+    }
+   }
+   Text(provider.note,color=Muted)
+   Text(PublicVpnCatalog.explanation(mode,provider),color=Muted)
+   if(mode!=VpnAdviceMode.OFF) {
+    Action("Open official ${provider.name} information") {
+     try { context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(provider.homepage))) }
+     catch (_:Exception) { open(Settings.ACTION_VPN_SETTINGS) }
+    }
+   }
+   Action("Review system VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
+   Text("For DNS-only filtering, configure Android Private DNS independently. VPN/DNS changes may affect battery, latency and app connectivity.",color=Muted)
   }
   if(section == "Display & Refresh Rate") {
    val context = LocalContext.current
