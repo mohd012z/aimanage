@@ -26,6 +26,23 @@ class DevicePoliciesTest {
   assertEquals(99, BatteryPercentagePolicy.fromLevelAndScale(Int.MAX_VALUE - 1, Int.MAX_VALUE))
  }
 
+ @Test fun dischargeSegmentStopsAtChargingAndMissingReadings() {
+  val p=DischargeSegmentPolicy::Point
+  assertEquals(listOf(p(3 * hour,85,false),p(4 * hour,80,false)),
+   DischargeSegmentPolicy.latest(listOf(p(hour,95,false),p(2 * hour,90,true),p(3 * hour,85,false),p(4 * hour,80,false))))
+  assertEquals(listOf(p(4 * hour,80,false)),
+   DischargeSegmentPolicy.latest(listOf(p(2 * hour,90,false),p(3 * hour,null,false),p(4 * hour,80,false))))
+ }
+
+ @Test fun dischargeSegmentRespectsGapClockRollbackAndInvalidReadings() {
+  val p=DischargeSegmentPolicy::Point
+  assertEquals(2,DischargeSegmentPolicy.latest(listOf(p(hour,90,false),p(5 * hour,80,false),p(6 * hour,75,false))).size)
+  assertEquals(1,DischargeSegmentPolicy.latest(listOf(p(5 * hour,90,false),p(4 * hour,80,false))).size)
+  assertEquals(1,DischargeSegmentPolicy.latest(listOf(p(hour,90,false),p(2 * hour,101,false))).size)
+  assertEquals(1,DischargeSegmentPolicy.latest(listOf(p(hour,90,false),p(2 * hour,92,false))).size)
+  assertTrue(DischargeSegmentPolicy.latest(emptyList()).isEmpty())
+ }
+
  @Test fun firstCaptureIsAccepted() {
   assertTrue(LearningSamplingPolicy.shouldRecord(null, 1_000L))
  }
