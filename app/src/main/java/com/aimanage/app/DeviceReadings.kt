@@ -26,7 +26,7 @@ object DeviceReadings {
   val current = manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
   val counter = manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
   return BatterySnapshot(
-   if(level >= 0 && scale > 0) level * 100 / scale else null,
+   if(level >= 0 && scale > 0 && level <= scale) (level.toLong() * 100L / scale).toInt() else null,
    if(temp >= 0) temp / 10f else null,
    voltage.takeIf { it >= 0 },
    current.takeIf { it != Int.MIN_VALUE }?.div(1000),
