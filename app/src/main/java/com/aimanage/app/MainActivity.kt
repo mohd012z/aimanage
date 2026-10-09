@@ -320,9 +320,9 @@ private fun AimanageUI() {
      Text(profile.name.replace('_',' ').lowercase().replaceFirstChar { it.titlecase() })
     }
    }
-   val measured=DeviceMeasurementPolicy.discharge(samples.map {
+   val measured=DeviceMeasurementPolicy.recentDischarge(samples.map {
     DischargeSegmentPolicy.Point(it.timestamp,it.batteryPercent,it.charging)
-   })
+   },System.currentTimeMillis())
    Text(DeviceMeasurementPolicy.recommendation(adviceProfile,measured,samples.lastOrNull()?.thermalStatus ?: thermal),color=Muted)
    Text("Advisory only: no app was closed, throttled, restricted or reconfigured.",color=Muted)
    var captureMessage by remember { mutableStateOf("") }
