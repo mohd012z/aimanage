@@ -12,6 +12,14 @@ object DeviceAssistant {
  fun reply(context:Context, input:String):AssistantReply {
   val q=input.lowercase(Locale.ROOT).trim()
   if(q.isBlank()) return AssistantReply("Ask about battery, temperature, app activity, notification rules, or Android settings.")
+  if(listOf("sleep","overnight","standby drain","while sleeping","phone not use").any { it in q }) {
+   val samples=DeviceLearningEngine.load(context)
+   return AssistantReply(SmartAppAdvice.standbyExplanation(samples.size)+" Android Doze may defer jobs and some network access when the phone is idle. Important calls, alarms and some push notifications can still work. To reduce standby drain, review Android's battery-use report the following morning and exempt essential apps from aggressive restrictions.",Settings.ACTION_BATTERY_SAVER_SETTINGS)
+  }
+  if(listOf("uninstall","remove apps","delete app").any { it in q })
+   return AssistantReply("I cannot identify a safe-to-uninstall app without its identity, user needs and data. Review apps you recognize but no longer use, export important data and check subscriptions first. Do not remove system apps, authentication, calling, alarms or work-critical services automatically.",Settings.ACTION_APPLICATION_SETTINGS)
+  if(listOf("running in background","background running","draining battery").any { it in q })
+   return AssistantReply("Android's ordinary APIs cannot provide a trustworthy list of every currently running background app or its real CPU drain. Standard edition intentionally does not request Usage Access. Review Android Settings > Battery > App battery usage, then selectively adjust confirmed nonessential apps; avoid indiscriminate force-stopping.",Settings.ACTION_APPLICATION_SETTINGS)
   if(listOf("dns","block ads","adblock","iklan").any { it in q })
    return AssistantReply("Private DNS can block some advertising domains. In Android Settings, locate Private DNS, select provider hostname and enter a provider you trust (example: dns.adguard-dns.com). Verify normal browsing and app connectivity afterwards. DNS filters cannot block all in-app or video ads; some apps may break, and the provider receives DNS queries. AImanage cannot silently configure Private DNS.",Settings.ACTION_WIRELESS_SETTINGS)
   if("vpn" in q)
