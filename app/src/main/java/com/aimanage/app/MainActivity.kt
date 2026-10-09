@@ -182,7 +182,7 @@ private fun AimanageUI() {
    Text("Charging limits cannot be controlled by ordinary Android apps.",color=Muted)
    Text("Standby drain history and charging alerts: planned.",color=Muted)
   }
-  if(section == "Charging Intelligence" || section == "Brightness & Power" || section == "AI Assistant") {
+  if(section == "Charging Intelligence" || section == "Brightness & Power") {
    val context = LocalContext.current
    var d by remember(section) { mutableStateOf(ChargingDiagnostics.assess(context)) }
    Text("Battery-side charging power: ${d.batteryPowerW?.let { "%.1f W".format(it) } ?: "Unavailable"}")
@@ -193,7 +193,7 @@ private fun AimanageUI() {
    Action("Refresh charging and display readings") { d = ChargingDiagnostics.assess(context) }
    Action("Open display settings") { open(Settings.ACTION_DISPLAY_SETTINGS) }
    Action("Open battery saver") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
-   Text("Charging alerts and interactive AI chat are planned; this screen currently provides rule-based observations.",color=Muted)
+   Text("Charging observations are locally computed; charge-current readings depend on hardware support.",color=Muted)
   }
   if(section == "Security Intelligence" || section == "Web Scam Check" || section == "Telegram Safety" || section == "Caller Intelligence" || section == "Voice Caller"  ) {
    var query by remember { mutableStateOf("") }
@@ -342,28 +342,56 @@ private fun AimanageUI() {
    Text("For overnight alerts and calls, keep essential apps unrestricted. Android Doze may defer background work; Xiaomi battery policies can add restrictions. Never disable safety or notification protections to save power.",color=Muted)
   }
   if(section == "AI Assistant") {
-   val context = LocalContext.current
+   val context=LocalContext.current
    var question by remember { mutableStateOf("") }
-   var reply by remember { mutableStateOf<AssistantReply?>(null) }
-   Text("Offline device assistant — evidence-based answers and permission-aware actions.",color=Muted)
-   OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask AImanage")},modifier=Modifier.fillMaxWidth(),minLines=2)
-   Action("Ask assistant") { reply=DeviceAssistant.reply(context,question) }
-   Text("Quick questions",color=Muted,style=MaterialTheme.typography.labelMedium)
-   val quickQuestions=listOf("Save battery without slowing apps","Which apps should I close?","What drains battery overnight?","Which notifications can I disable?","Should I uninstall an app?","Private DNS block ads","Cooling and thermal","Network speed")
-   quickQuestions.forEach { prompt ->
-    TextButton(onClick={ question=prompt; reply=DeviceAssistant.reply(context,prompt) }) { Text(prompt) }
-   }
-   reply?.let { answer ->
-    Text(answer.message)
-    answer.settingsAction?.let { action -> Action("Open Android settings") { open(action) } }
-    answer.proposedRule?.let { enabled ->
-     Action(if(enabled) "Confirm enable automation" else "Confirm disable automation") {
-      DeviceAssistant.setNotificationAutomation(context,enabled)
-      reply=AssistantReply("Notification automation ${if(enabled) "enabled" else "disabled"}. Android Notification Access must still be granted.")
-     }
-     Action("Cancel proposed change") { reply=null }
+   val conversation=remember { mutableStateListOf<Pair<Boolean,String>>() }
+   var proposed by remember { mutableStateOf<Boolean?>(null) }
+   var settingsAction by remember { mutableStateOf<String?>(null) }
+   val ask:(String)->Unit={ input ->
+    if(input.isNotBlank()) {
+     conversation.add(true to input.trim())
+     val answer=DeviceAssistant.reply(context,input)
+     conversation.add(false to answer.message)
+     proposed=answer.proposedRule
+     settingsAction=answer.settingsAction
+     question=""
     }
    }
+   Text("AImanage Advisor",color=Cyan,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+   Text("On-device diagnostic rules • Not connected to LOLA or a cloud LLM",color=Muted)
+   Text("Answers use Android readings when available. I will say when permissions or evidence are insufficient.",color=Muted,style=MaterialTheme.typography.bodySmall)
+   conversation.takeLast(12).forEach { (user,message) ->
+    Card(colors=CardDefaults.cardColors(containerColor=if(user) Color(0xFF123D52) else Navy),
+     shape=RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth()) {
+     Column(Modifier.padding(12.dp)) {
+      Text(if(user) "You" else "AImanage",color=if(user) Cyan else Color.White,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.labelMedium)
+      val compact = !user && !context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE).getBoolean("show_explanations",true)
+      val displayed = if(compact && message.length>190) message.take(190)+"…" else message
+      Text(displayed,color=Color.White)
+     }
+    }
+   }
+   OutlinedTextField(value=question,onValueChange={question=it},label={Text("Ask about your phone")},modifier=Modifier.fillMaxWidth(),minLines=2,maxLines=4)
+   Button(onClick={ask(question)},enabled=question.isNotBlank(),modifier=Modifier.fillMaxWidth()) {
+    Icon(Icons.Default.Send,null); Spacer(Modifier.width(8.dp));Text("Send question")
+   }
+   Text("Try a question",color=Muted,style=MaterialTheme.typography.labelMedium)
+   val uiPrefs=remember { context.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE) }
+   if(uiPrefs.getBoolean("quick_prompts",true)) {
+    listOf("apps background","Cooling and thermal","How to save battery without slowing apps?","What drains battery overnight?","CPU and RAM","Free VPN options").forEach { prompt ->
+     OutlinedButton(onClick={ask(prompt)},modifier=Modifier.fillMaxWidth()) { Text(prompt) }
+    }
+   }
+   settingsAction?.let { action -> Action("Review suggested Android settings") { open(action) } }
+   proposed?.let { enabled ->
+    Action(if(enabled) "Confirm notification rule ON" else "Confirm notification rule OFF") {
+     DeviceAssistant.setNotificationAutomation(context,enabled)
+     conversation.add(false to "Preference saved. Any required Android permission must still be explicitly granted.")
+     proposed=null
+    }
+    Action("Cancel suggested change") { proposed=null }
+   }
+   Action("Clear this conversation") { conversation.clear();settingsAction=null;proposed=null }
   }
   if(section == "AI Learning") {
    val alertContext = LocalContext.current
@@ -518,9 +546,14 @@ private fun AimanageUI() {
    Text(provider.note,color=Muted)
    Text(PublicVpnCatalog.explanation(mode,provider),color=Muted)
    if(mode!=VpnAdviceMode.OFF) {
-    Action("Open official ${provider.name} information") {
-     try { context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(provider.homepage))) }
-     catch (_:Exception) { open(Settings.ACTION_VPN_SETTINGS) }
+    Text("Setup requires your confirmation in the provider app and Android. AImanage cannot create a VPN server profile automatically.",color=Muted)
+    Action("Set up ${provider.name} (user-confirmed)") {
+     val packageId=PublicVpnCatalog.packageName(provider)
+     val installed=packageId?.let { context.packageManager.getLaunchIntentForPackage(it) }
+     try {
+      if(installed!=null) context.startActivity(installed)
+      else context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(provider.homepage)))
+     } catch (_:Exception) { open(Settings.ACTION_VPN_SETTINGS) }
     }
    }
    Action("Review system VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
@@ -538,6 +571,25 @@ private fun AimanageUI() {
    Action("Open VPN settings") { open(Settings.ACTION_VPN_SETTINGS) }
   }
   if(section == "Thermal" || section == "CPU & Thermal") Text("Current thermal status: $thermal")
+  if(section == "Settings") {
+   val ctx=LocalContext.current
+   val prefs=remember { ctx.getSharedPreferences("aimanage_ui_options",Context.MODE_PRIVATE) }
+   var quickPrompts by remember { mutableStateOf(prefs.getBoolean("quick_prompts",true)) }
+   var descriptions by remember { mutableStateOf(prefs.getBoolean("show_explanations",true)) }
+   Text("AImanage preferences",color=Cyan,fontWeight=FontWeight.Bold)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Show AI quick questions",modifier=Modifier.weight(1f))
+    Switch(checked=quickPrompts,onCheckedChange={quickPrompts=it;prefs.edit().putBoolean("quick_prompts",it).apply()})
+   }
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Text("Show detailed explanations",modifier=Modifier.weight(1f))
+    Switch(checked=descriptions,onCheckedChange={descriptions=it;prefs.edit().putBoolean("show_explanations",it).apply()})
+   }
+   Text("Preferences are stored only on this device; they do not change Android permissions or stop other apps.",color=Muted)
+   Action("Review AImanage app permissions") { open(Settings.ACTION_APPLICATION_SETTINGS) }
+   Action("Review battery settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+   Action("Manage Android notifications") { open(Settings.ACTION_APP_NOTIFICATION_SETTINGS) }
+  }
   if(section == "Device Information") { Text("Model: ${Build.MANUFACTURER} ${Build.MODEL}"); Text("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})") }
   Action("Open Android app settings") { open(Settings.ACTION_APPLICATION_SETTINGS) }
   Action("Open battery saver settings") { open(Settings.ACTION_BATTERY_SAVER_SETTINGS) }

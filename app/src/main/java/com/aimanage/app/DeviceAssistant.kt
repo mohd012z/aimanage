@@ -12,6 +12,14 @@ object DeviceAssistant {
  fun reply(context:Context, input:String):AssistantReply {
   val q=input.lowercase(Locale.ROOT).trim()
   if(q.isBlank()) return AssistantReply("Ask about battery, temperature, app activity, notification rules, or Android settings.")
+  // Handle conversational combinations first; a generic "apps" match must not hide a request for cooling.
+  if(listOf("apps background","background apps","apps running","running background","app not open","background service").any { it in q })
+   return AssistantReply("Background activity review: Android does not expose a trustworthy real-time list of every other app's background services. In App Review, check Android's per-app Battery usage, then limit only nonessential apps with verified excess use. For calls, alarms, navigation and messaging keep unrestricted operation. AImanage cannot automatically force-stop another app.",Settings.ACTION_APPLICATION_SETTINGS)
+  if(listOf("cooling","cool phone","reduce heat","hot phone","overheat","phone hot").any { it in q }) {
+   val reading=DeviceReadings.battery(context)
+   val status=ActivityMonitor.report(context).thermalStatus
+   return AssistantReply("Live thermal check: Android reports $status; battery temperature ${reading.temperatureC?.let { "$it °C" } ?: "unavailable"}. Pause demanding foreground apps and heavy charging if warm, move out of sunlight, allow ventilation and Android's thermal control to operate. Do not force-stop vital services or use rapid cooling tricks.")
+  }
   if(listOf("overnight","sleep","sleeping","bedtime","idle drain").any { it in q })
    return AssistantReply("Open Sleep Review from the navigation menu. Capture a baseline before bed and compare in the morning. Android may use Doze, defer sync and wake for calls or alarms. A before/after reading does not prove the phone stayed idle or identify an app. Review Android battery usage for per-app evidence.",Settings.ACTION_BATTERY_SAVER_SETTINGS)
   if(listOf("uninstall","delete app","remove app").any { it in q })

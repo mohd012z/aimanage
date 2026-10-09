@@ -4,7 +4,16 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Narrow package visibility solely for user-selected VPN provider handoff. -->
+    <queries>
+        <package android:name="ch.protonvpn.android" />
+        <package android:name="com.cloudflare.onedotonedotonedotone" />
+        <package android:name="com.windscribe.vpn" />
+    </queries>
+
     <application
+        android:icon="@drawable/aimanage_icon"
+        android:roundIcon="@drawable/aimanage_icon"
         android:label="AImanage"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
