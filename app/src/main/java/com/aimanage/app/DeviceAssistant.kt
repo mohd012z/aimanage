@@ -12,6 +12,10 @@ object DeviceAssistant {
  fun reply(context:Context, input:String):AssistantReply {
   val q=input.lowercase(Locale.ROOT).trim()
   if(q.isBlank()) return AssistantReply("Ask about battery, temperature, app activity, notification rules, or Android settings.")
+  if(listOf("clean cache","clear cache","cache file","storage cleaner","rearrange files","organize files","sort files","clean junk").any { it in q })
+   return AssistantReply("Open Cleaner & Files from the sidebar. AImanage can delete its own temporary cache after confirmation. Android does not allow it to silently delete other apps' caches. To organize documents, select a folder with Android's picker; the app copies supported files into category folders and keeps originals so you can review them. No all-files access is requested.",Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
+  if("lola" in q || "gguf" in q)
+   return AssistantReply("LOLA is not connected to this Android app, and no GGUF model is installed. This assistant currently performs local rule-based diagnostics. A cloud or on-device inference backend would need a separately verified integration and your consent; it cannot be described as active.")
   // Handle conversational combinations first; a generic "apps" match must not hide a request for cooling.
   if(listOf("apps background","background apps","apps running","running background","app not open","background service").any { it in q })
    return AssistantReply("Background activity review: Android does not expose a trustworthy real-time list of every other app's background services. In App Review, check Android's per-app Battery usage, then limit only nonessential apps with verified excess use. For calls, alarms, navigation and messaging keep unrestricted operation. AImanage cannot automatically force-stop another app.",Settings.ACTION_APPLICATION_SETTINGS)
