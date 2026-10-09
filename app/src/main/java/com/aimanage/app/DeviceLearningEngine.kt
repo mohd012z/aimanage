@@ -67,8 +67,15 @@ object DeviceLearningEngine {
   if(last.thermalStatus in setOf("Severe","Critical","Emergency","Shutdown"))
    insights += DeviceInsight("WARNING","Android reports thermal pressure",
     "System thermal status: ${last.thermalStatus}.","Allow Android thermal safeguards to operate.")
-  val recent=samples.takeLast(24).filter { !it.charging && it.batteryPercent != null }
-  if(recent.size>=2 && recent.zipWithNext().all { (a,b) -> b.timestamp > a.timestamp && b.batteryPercent!! <= a.batteryPercent!! }) {
+  // Analyze only the latest uninterrupted discharge session. Filtering out charging
+  // samples could otherwise connect unrelated periods and report a misleading rate.
+  val recent=samples.takeLast(24).takeLastWhile { !it.charging && it.batteryPercent != null }
+  val continuous=recent.size>=2 && recent.zipWithNext().all { (a,b) ->
+   b.timestamp > a.timestamp &&
+    b.timestamp-a.timestamp <= 3L*60L*60L*1000L &&
+    b.batteryPercent!! <= a.batteryPercent!!
+  }
+  if(continuous) {
    val first=recent.first(); val end=recent.last()
    val elapsed=(end.timestamp-first.timestamp)/3600000.0
    if(elapsed>=1 && end.batteryPercent!! <= first.batteryPercent!!) {
