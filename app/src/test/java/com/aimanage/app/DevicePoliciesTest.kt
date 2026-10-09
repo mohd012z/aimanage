@@ -10,6 +10,22 @@ class DevicePoliciesTest {
  private val minute = TimeUnit.MINUTES.toMillis(1)
  private val hour = TimeUnit.HOURS.toMillis(1)
 
+ @Test fun batteryLevelRejectsMalformedBroadcasts() {
+  assertEquals(null, BatteryPercentagePolicy.fromLevelAndScale(-1, 100))
+  assertEquals(null, BatteryPercentagePolicy.fromLevelAndScale(12, 0))
+  assertEquals(null, BatteryPercentagePolicy.fromLevelAndScale(12, -1))
+  assertEquals(null, BatteryPercentagePolicy.fromLevelAndScale(101, 100))
+ }
+
+ @Test fun batteryLevelConversionIsBoundedAndOverflowSafe() {
+  assertEquals(0, BatteryPercentagePolicy.fromLevelAndScale(0, 100))
+  assertEquals(50, BatteryPercentagePolicy.fromLevelAndScale(50, 100))
+  assertEquals(100, BatteryPercentagePolicy.fromLevelAndScale(100, 100))
+  assertEquals(66, BatteryPercentagePolicy.fromLevelAndScale(2, 3))
+  assertEquals(100, BatteryPercentagePolicy.fromLevelAndScale(Int.MAX_VALUE, Int.MAX_VALUE))
+  assertEquals(99, BatteryPercentagePolicy.fromLevelAndScale(Int.MAX_VALUE - 1, Int.MAX_VALUE))
+ }
+
  @Test fun firstCaptureIsAccepted() {
   assertTrue(LearningSamplingPolicy.shouldRecord(null, 1_000L))
  }
