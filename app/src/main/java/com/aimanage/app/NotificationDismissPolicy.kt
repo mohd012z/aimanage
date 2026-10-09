@@ -16,7 +16,8 @@ internal object NotificationDismissPolicy {
  )
  private val protectedCategories = setOf(
   "call", "alarm", "sys", "service", "transport", "reminder",
-  "err", "missed_call", "navigation", "location_sharing"
+  "err", "missed_call", "navigation", "location_sharing",
+  "msg", "email", "event"
  )
 
  fun canDismiss(
@@ -29,11 +30,12 @@ internal object NotificationDismissPolicy {
   clearable: Boolean,
   category: String?,
   hasFullScreenIntent: Boolean,
-  secretVisibility: Boolean
+  secretVisibility: Boolean,
+  groupSummary: Boolean
  ): Boolean {
   if (!automationEnabled || sourcePackage.isBlank() || sourcePackage == ownPackage) return false
   if (sourcePackage in protectedPackages || sourcePackage !in allowlistedPackages) return false
-  if (ongoing || foregroundService || !clearable || hasFullScreenIntent || secretVisibility) return false
+  if (ongoing || foregroundService || !clearable || hasFullScreenIntent || secretVisibility || groupSummary) return false
   if (category in protectedCategories) return false
   return true
  }
