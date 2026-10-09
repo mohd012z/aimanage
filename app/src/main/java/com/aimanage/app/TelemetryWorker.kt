@@ -55,16 +55,14 @@ object TelemetryScheduler {
  }
  /** A delayed sample is not necessarily a failure: Doze and OEM policies defer work. */
  fun health(context:Context,now:Long=System.currentTimeMillis()):String {
-  if(!enabled(context)) return "Disabled"
-  val last=lastSuccess(context)
-  val enabledSince=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_enabled_since",0L)
-  val errorAt=lastErrorAt(context)
-  if(enabledSince>now) return "Device clock changed"
-  if((last>now && last>=enabledSince) || (errorAt>now && errorAt>=enabledSince)) return "Device clock changed"
-  if(errorAt>0L && errorAt>=enabledSince && (last==0L || errorAt>last)) return "Worker error: retry scheduled"
-  if(last==0L || last<enabledSince) return "Awaiting first background sample"
-  val age=now-last
-  return if(age<0L) "Device clock changed" else if(age>3*60*60*1000L) "Delayed: last sample over 3 hours ago" else "Recent sample recorded"
+  val prefs=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE)
+  return TelemetryHealthPolicy.status(
+   enabled=prefs.getBoolean("telemetry_enabled",false),
+   lastSuccess=prefs.getLong("telemetry_last_success",0L),
+   enabledSince=prefs.getLong("telemetry_enabled_since",0L),
+   lastErrorAt=prefs.getLong("telemetry_last_error_at",0L),
+   now=now
+  )
  }
  fun lastSuccess(context:Context):Long=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getLong("telemetry_last_success",0L)
  fun lastError(context:Context):String?=context.getSharedPreferences("aimanage_rules",Context.MODE_PRIVATE).getString("telemetry_last_error",null)
