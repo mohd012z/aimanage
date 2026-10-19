@@ -234,6 +234,27 @@ private fun AimanageUI() {
     Text("Charge cycles: Unavailable (OEM-dependent)")
    }
   }
+  if(section == "Device Information" || section == "CPU & Thermal" || section == "Overview") {
+   val details = remember { DeviceSystemReader.read() }
+   if(section == "Device Information") {
+    Text("Device & System • detailed specifications",color=Cyan,fontWeight=FontWeight.Bold)
+    Text("Brand: ${details.brand} • Manufacturer: ${details.manufacturer}")
+    Text("Model: ${details.model} • Device: ${details.device}")
+    Text("Board: ${details.board} • Hardware: ${details.hardware} • Product: ${details.product}")
+    Text("Android: ${details.androidRelease} • API: ${details.sdk} • Security patch: ${details.securityPatch ?: "Unavailable"}")
+    Text("Build: ${details.buildId} • Baseband: ${details.baseband ?: "Unavailable"}")
+    Text("Kernel: ${details.kernel} • Java VM: ${details.javaVersion}")
+    Text("Language: ${details.language} • Timezone: ${details.timezone}")
+    Text("Build fingerprint: ${details.fingerprint}")
+   }
+   if(section == "CPU & Thermal" || section == "Overview") {
+    Text("CPU cores • read-only frequency",color=Cyan,fontWeight=FontWeight.Bold)
+    Text("Logical cores: ${details.cores} • ABI: ${details.supportedAbis.joinToString()}")
+    details.coreFrequencies.forEach { core ->
+     Text("Core ${core.core}: ${core.currentKhz?.div(1000) ?: "Unavailable"} MHz • min ${core.minKhz?.div(1000) ?: "?"} / max ${core.maxKhz?.div(1000) ?: "?"} MHz")
+    }
+   }
+  }
   if(section == "Device Information") {
    val inventoryContext = LocalContext.current
    val inventory = remember(inventoryContext) { HardwareInventoryReader.read(inventoryContext) }
