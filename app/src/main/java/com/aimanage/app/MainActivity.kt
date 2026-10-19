@@ -165,7 +165,8 @@ private fun AimanageUI() {
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
   if(section == "Device Information") {
-   val inventory = remember { HardwareInventoryReader.read(LocalContext.current) }
+   val inventoryContext = LocalContext.current
+   val inventory = remember(inventoryContext) { HardwareInventoryReader.read(inventoryContext) }
    Text("Hardware inventory (read-only)", color=Cyan, fontWeight=FontWeight.Bold)
    Text("Manufacturer: ${inventory.manufacturer} • Model: ${inventory.model}")
    Text("Android SDK: ${inventory.sdk} • CPU threads: ${inventory.processors}")
