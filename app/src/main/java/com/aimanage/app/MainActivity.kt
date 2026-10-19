@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -164,6 +165,109 @@ private fun AimanageUI() {
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
+  if(section == "Performance" || section == "RAM" || section == "CPU & Thermal" || section == "Device Information") {
+   val monitorContext = LocalContext.current
+   var previousReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
+   var currentReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
+   var liveEnabled by remember { mutableStateOf(false) }
+   var refreshSeconds by remember { mutableIntStateOf(5) }
+   val history = remember { mutableStateListOf<Int>() }
+   LaunchedEffect(liveEnabled, refreshSeconds) {
+    while(liveEnabled) {
+     val next = DeviceMonitor.capture(monitorContext)
+     previousReading = currentReading
+     currentReading = next
+     MonitorMath.usedPercent(next.ramTotal, next.ramAvailable)?.let {
+      history.add(it)
+      if(history.size > 30) history.removeAt(0)
+     }
+     delay(refreshSeconds * 1000L)
+    }
+   }
+   val reading = currentReading
+   Text("Hardware monitor • on-demand / foreground live", color=Cyan, fontWeight=FontWeight.Bold)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=liveEnabled,onCheckedChange={liveEnabled=it})
+    Text("Live monitoring (only while this panel is visible)")
+   }
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+    listOf(2,5,10).forEach { seconds ->
+     TextButton(onClick={refreshSeconds=seconds},enabled=refreshSeconds!=seconds) { Text("${seconds}s") }
+    }
+   }
+   Text("Read-only device measurements. CPU % refers to AImanage process, not total system CPU.", color=Muted)
+   Action("Sample CPU / RAM / storage / battery") {
+    previousReading = currentReading
+    currentReading = DeviceMonitor.capture(monitorContext)
+   }
+   if(history.isNotEmpty()) {
+    Text("Recent RAM use • last ${history.size} samples",color=Muted)
+    history.takeLast(10).forEach { used ->
+     LinearProgressIndicator(progress={used / 100f},modifier=Modifier.fillMaxWidth())
+    }
+   }
+   if(reading != null) {
+    val cpu = previousReading?.let { MonitorMath.appCpuPercent(it, reading) }
+    Text("AImanage CPU: ${cpu?.let { String.format(java.util.Locale.US, "%.1f%%", it) } ?: "Take second sample"}")
+    Text("RAM used: ${MonitorMath.usedPercent(reading.ramTotal, reading.ramAvailable)?.let { "$it%" } ?: "Unavailable"}")
+    Text("RAM available: ${reading.ramAvailable?.div(1048576) ?: "Unavailable"} MiB")
+    Text("Data storage available: ${reading.storageAvailable?.div(1048576) ?: "Unavailable"} MiB")
+    Text("Battery: ${reading.batteryPercent?.let { "$it%" } ?: "Unavailable"} • ${reading.batteryTemperatureC?.let { "$it °C" } ?: "Temperature unavailable"}")
+    Text("Battery current: ${reading.batteryCurrentMa?.let { "$it mA" } ?: "Unavailable"}")
+    Text("Android thermal code: ${reading.thermalStatus ?: "Unavailable"} • Power saver: ${reading.powerSave ?: "Unavailable"}")
+   }
+  }
+  if(section == "Battery") {
+   val batteryContext = LocalContext.current
+   var batteryDetail by remember { mutableStateOf<BatteryDiagnostics?>(null) }
+   LaunchedEffect(Unit) { batteryDetail = BatteryDiagnosticsReader.read(batteryContext) }
+   Text("Battery diagnostics • read-only",color=Cyan,fontWeight=FontWeight.Bold)
+   Action("Refresh battery diagnostics") { batteryDetail = BatteryDiagnosticsReader.read(batteryContext) }
+   batteryDetail?.let { b ->
+    Text("Health: ${b.health} • Level: ${b.levelPercent?.let { "$it%" } ?: "Unavailable"}")
+    Text("Status: ${b.status} • Source: ${b.source}")
+    Text("Technology: ${b.technology ?: "Unavailable"}")
+    Text("Temperature: ${b.temperatureC?.let { "$it °C" } ?: "Unavailable"}")
+    Text("Current: ${b.currentMa?.let { String.format(java.util.Locale.US,"%.1f mA",it) } ?: "Unavailable"}")
+    Text("Voltage: ${b.voltageMv?.let { "$it mV" } ?: "Unavailable"}")
+    Text("Power: ${b.powerW?.let { String.format(java.util.Locale.US,"%.2f W",it) } ?: "Unavailable"}")
+    Text("Charge cycles: Unavailable (OEM-dependent)")
+   }
+  }
+  if(section == "Device Information" || section == "CPU & Thermal" || section == "Overview") {
+   val details = remember { DeviceSystemReader.read() }
+   if(section == "Device Information") {
+    Text("Device & System • detailed specifications",color=Cyan,fontWeight=FontWeight.Bold)
+    Text("Brand: ${details.brand} • Manufacturer: ${details.manufacturer}")
+    Text("Model: ${details.model} • Device: ${details.device}")
+    Text("Board: ${details.board} • Hardware: ${details.hardware} • Product: ${details.product}")
+    Text("Android: ${details.androidRelease} • API: ${details.sdk} • Security patch: ${details.securityPatch ?: "Unavailable"}")
+    Text("Build: ${details.buildId} • Baseband: ${details.baseband ?: "Unavailable"}")
+    Text("Kernel: ${details.kernel} • Java VM: ${details.javaVersion}")
+    Text("Language: ${details.language} • Timezone: ${details.timezone}")
+    Text("Build fingerprint: ${details.fingerprint}")
+   }
+   if(section == "CPU & Thermal" || section == "Overview") {
+    Text("CPU cores • read-only frequency",color=Cyan,fontWeight=FontWeight.Bold)
+    Text("Logical cores: ${details.cores} • ABI: ${details.supportedAbis.joinToString()}")
+    details.coreFrequencies.forEach { core ->
+     Text("Core ${core.core}: ${core.currentKhz?.div(1000) ?: "Unavailable"} MHz • min ${core.minKhz?.div(1000) ?: "?"} / max ${core.maxKhz?.div(1000) ?: "?"} MHz")
+    }
+   }
+  }
+  if(section == "Device Information") {
+   val inventoryContext = LocalContext.current
+   val inventory = remember(inventoryContext) { HardwareInventoryReader.read(inventoryContext) }
+   Text("Hardware inventory (read-only)", color=Cyan, fontWeight=FontWeight.Bold)
+   Text("Manufacturer: ${inventory.manufacturer} • Model: ${inventory.model}")
+   Text("Android SDK: ${inventory.sdk} • CPU threads: ${inventory.processors}")
+   Text("Supported ABIs: ${inventory.abis.joinToString()}")
+   Text("RAM: ${inventory.availableRamBytes ?: "Unavailable"} / ${inventory.totalRamBytes ?: "Unavailable"} bytes available")
+   Text("Data partition: ${inventory.storageAvailableBytes ?: "Unavailable"} / ${inventory.storageTotalBytes ?: "Unavailable"} bytes available")
+   Text("Display: ${inventory.screenWidthPx ?: "?"} × ${inventory.screenHeightPx ?: "?"} px • ${inventory.densityDpi ?: "?"} dpi")
+   Text("Sensors (${inventory.sensors.size}): ${inventory.sensors.joinToString().ifBlank { "Unavailable" }}")
+   Text("Values depend on public Android API availability; sensor inventory does not imply sensor accuracy.", color=Muted)
+  }
   if(section == "Cleaner & Files") {
    val ctx=LocalContext.current
    var cacheSize by remember { mutableStateOf(SafeStorageTools.cacheBytes(ctx)) }
