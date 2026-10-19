@@ -164,6 +164,18 @@ private fun AimanageUI() {
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
+  if(section == "Device Information") {
+   val inventory = remember { HardwareInventoryReader.read(LocalContext.current) }
+   Text("Hardware inventory (read-only)", color=Cyan, fontWeight=FontWeight.Bold)
+   Text("Manufacturer: ${inventory.manufacturer} • Model: ${inventory.model}")
+   Text("Android SDK: ${inventory.sdk} • CPU threads: ${inventory.processors}")
+   Text("Supported ABIs: ${inventory.abis.joinToString()}")
+   Text("RAM: ${inventory.availableRamBytes ?: "Unavailable"} / ${inventory.totalRamBytes ?: "Unavailable"} bytes available")
+   Text("Data partition: ${inventory.storageAvailableBytes ?: "Unavailable"} / ${inventory.storageTotalBytes ?: "Unavailable"} bytes available")
+   Text("Display: ${inventory.screenWidthPx ?: "?"} × ${inventory.screenHeightPx ?: "?"} px • ${inventory.densityDpi ?: "?"} dpi")
+   Text("Sensors (${inventory.sensors.size}): ${inventory.sensors.joinToString().ifBlank { "Unavailable" }}")
+   Text("Values depend on public Android API availability; sensor inventory does not imply sensor accuracy.", color=Muted)
+  }
   if(section == "Cleaner & Files") {
    val ctx=LocalContext.current
    var cacheSize by remember { mutableStateOf(SafeStorageTools.cacheBytes(ctx)) }
