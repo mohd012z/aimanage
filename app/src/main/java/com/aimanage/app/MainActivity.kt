@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -168,12 +169,42 @@ private fun AimanageUI() {
    val monitorContext = LocalContext.current
    var previousReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
    var currentReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
+   var liveEnabled by remember { mutableStateOf(false) }
+   var refreshSeconds by remember { mutableIntStateOf(5) }
+   val history = remember { mutableStateListOf<Int>() }
+   LaunchedEffect(liveEnabled, refreshSeconds) {
+    while(liveEnabled) {
+     val next = DeviceMonitor.capture(monitorContext)
+     previousReading = currentReading
+     currentReading = next
+     MonitorMath.usedPercent(next.ramTotal, next.ramAvailable)?.let {
+      history.add(it)
+      if(history.size > 30) history.removeAt(0)
+     }
+     delay(refreshSeconds * 1000L)
+    }
+   }
    val reading = currentReading
-   Text("Hardware monitor • manual refresh", color=Cyan, fontWeight=FontWeight.Bold)
+   Text("Hardware monitor • on-demand / foreground live", color=Cyan, fontWeight=FontWeight.Bold)
+   Row(verticalAlignment=Alignment.CenterVertically) {
+    Checkbox(checked=liveEnabled,onCheckedChange={liveEnabled=it})
+    Text("Live monitoring (only while this panel is visible)")
+   }
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+    listOf(2,5,10).forEach { seconds ->
+     TextButton(onClick={refreshSeconds=seconds},enabled=refreshSeconds!=seconds) { Text("${seconds}s") }
+    }
+   }
    Text("Read-only device measurements. CPU % refers to AImanage process, not total system CPU.", color=Muted)
    Action("Sample CPU / RAM / storage / battery") {
     previousReading = currentReading
     currentReading = DeviceMonitor.capture(monitorContext)
+   }
+   if(history.isNotEmpty()) {
+    Text("Recent RAM use • last ${history.size} samples",color=Muted)
+    history.takeLast(10).forEach { used ->
+     LinearProgressIndicator(progress={used / 100f},modifier=Modifier.fillMaxWidth())
+    }
    }
    if(reading != null) {
     val cpu = previousReading?.let { MonitorMath.appCpuPercent(it, reading) }
