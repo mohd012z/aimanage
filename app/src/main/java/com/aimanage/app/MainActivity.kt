@@ -217,6 +217,23 @@ private fun AimanageUI() {
     Text("Android thermal code: ${reading.thermalStatus ?: "Unavailable"} • Power saver: ${reading.powerSave ?: "Unavailable"}")
    }
   }
+  if(section == "Battery") {
+   val batteryContext = LocalContext.current
+   var batteryDetail by remember { mutableStateOf<BatteryDiagnostics?>(null) }
+   LaunchedEffect(Unit) { batteryDetail = BatteryDiagnosticsReader.read(batteryContext) }
+   Text("Battery diagnostics • read-only",color=Cyan,fontWeight=FontWeight.Bold)
+   Action("Refresh battery diagnostics") { batteryDetail = BatteryDiagnosticsReader.read(batteryContext) }
+   batteryDetail?.let { b ->
+    Text("Health: ${b.health} • Level: ${b.levelPercent?.let { "$it%" } ?: "Unavailable"}")
+    Text("Status: ${b.status} • Source: ${b.source}")
+    Text("Technology: ${b.technology ?: "Unavailable"}")
+    Text("Temperature: ${b.temperatureC?.let { "$it °C" } ?: "Unavailable"}")
+    Text("Current: ${b.currentMa?.let { String.format(java.util.Locale.US,"%.1f mA",it) } ?: "Unavailable"}")
+    Text("Voltage: ${b.voltageMv?.let { "$it mV" } ?: "Unavailable"}")
+    Text("Power: ${b.powerW?.let { String.format(java.util.Locale.US,"%.2f W",it) } ?: "Unavailable"}")
+    Text("Charge cycles: Unavailable (OEM-dependent)")
+   }
+  }
   if(section == "Device Information") {
    val inventoryContext = LocalContext.current
    val inventory = remember(inventoryContext) { HardwareInventoryReader.read(inventoryContext) }
