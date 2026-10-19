@@ -164,6 +164,28 @@ private fun AimanageUI() {
   else -> "System information and Android settings."
  }
  PanelCard(section,description,Icons.Default.SettingsSuggest) {
+  if(section == "Performance" || section == "RAM" || section == "CPU & Thermal" || section == "Device Information") {
+   val monitorContext = LocalContext.current
+   var previousReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
+   var currentReading by remember { mutableStateOf<MonitorSnapshot?>(null) }
+   val reading = currentReading
+   Text("Hardware monitor • manual refresh", color=Cyan, fontWeight=FontWeight.Bold)
+   Text("Read-only device measurements. CPU % refers to AImanage process, not total system CPU.", color=Muted)
+   Action("Sample CPU / RAM / storage / battery") {
+    previousReading = currentReading
+    currentReading = DeviceMonitor.capture(monitorContext)
+   }
+   if(reading != null) {
+    val cpu = previousReading?.let { MonitorMath.appCpuPercent(it, reading) }
+    Text("AImanage CPU: ${cpu?.let { String.format(java.util.Locale.US, "%.1f%%", it) } ?: "Take second sample"}")
+    Text("RAM used: ${MonitorMath.usedPercent(reading.ramTotal, reading.ramAvailable)?.let { "$it%" } ?: "Unavailable"}")
+    Text("RAM available: ${reading.ramAvailable?.div(1048576) ?: "Unavailable"} MiB")
+    Text("Data storage available: ${reading.storageAvailable?.div(1048576) ?: "Unavailable"} MiB")
+    Text("Battery: ${reading.batteryPercent?.let { "$it%" } ?: "Unavailable"} • ${reading.batteryTemperatureC?.let { "$it °C" } ?: "Temperature unavailable"}")
+    Text("Battery current: ${reading.batteryCurrentMa?.let { "$it mA" } ?: "Unavailable"}")
+    Text("Android thermal code: ${reading.thermalStatus ?: "Unavailable"} • Power saver: ${reading.powerSave ?: "Unavailable"}")
+   }
+  }
   if(section == "Device Information") {
    val inventoryContext = LocalContext.current
    val inventory = remember(inventoryContext) { HardwareInventoryReader.read(inventoryContext) }
